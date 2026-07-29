@@ -1,9 +1,11 @@
 "use client";
 
-import type { Task } from "@/lib/types";
+import type { Anchor, Task, WeekDay } from "@/lib/types";
 import { PHASE_META, PHASE_ORDER } from "@/lib/design-tokens";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { TaskCard } from "./TaskCard";
+import { WeekNav } from "./WeekNav";
+import { AnchorStrip } from "./AnchorStrip";
 
 /**
  * TIME-BLOCKING ESTOCASTICO.
@@ -13,23 +15,41 @@ import { TaskCard } from "./TaskCard";
  */
 export function TimeBlocks({
   tasks,
+  anchors,
+  today,
+  selectedDay,
+  onSelectDay,
   onToggleStep,
   onBreakdown,
   onFocus,
 }: {
   tasks: Task[];
+  anchors: Anchor[];
+  today: WeekDay | null;
+  selectedDay: WeekDay;
+  onSelectDay: (day: WeekDay) => void;
   onToggleStep: (taskId: string, stepId: string) => void;
   onBreakdown: (taskId: string) => void;
   onFocus: (taskId: string) => void;
 }) {
   return (
     <section className="block-hard p-5">
-      <SectionHeader index="02" title="Bloques" sub="por fase · sin reloj" />
+      <SectionHeader index="03" title="Semana" sub="fases sin reloj · anclas con hora" />
+
+      <WeekNav
+        tasks={tasks}
+        today={today}
+        selected={selectedDay}
+        onSelect={onSelectDay}
+      />
+      <AnchorStrip anchors={anchors} day={selectedDay} />
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {PHASE_ORDER.map((phase) => {
           const meta = PHASE_META[phase];
-          const phaseTasks = tasks.filter((t) => t.phase === phase);
+          const phaseTasks = tasks.filter(
+            (t) => t.phase === phase && t.day === selectedDay,
+          );
           return (
             <div key={phase} className="flex flex-col gap-3 border border-ink bg-cement p-3">
               <div className="border-b border-ink pb-2">

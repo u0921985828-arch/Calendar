@@ -45,6 +45,7 @@ Reglas duras: bordes `1px solid #111`, radio `0`, **sin** sombras difuminadas (s
 |---------|-----------|----------------|
 | **Brain Dump** (captura cero fricción) | `components/dashboard/BrainDump.tsx` | Un input. Enter guarda y limpia. Triaje diferido a la Bandeja. |
 | **Time-Blocking estocástico** | `components/dashboard/TimeBlocks.tsx` | Columnas por **fase** (Arranque/Pico/Meseta/Cierre), no por hora. |
+| **Calendario híbrido** | `WeekNav.tsx` + `AnchorStrip.tsx` | Semana por días (Lun–Dom, sin horas) + franja de **anclas** con hora fija para las excepciones (citas, reuniones). |
 | **Desglose algorítmico** | `lib/breakdown.ts` + `TaskCard.tsx` | Macro → 3–5 micro-pasos moleculares ejecutables. |
 | **Modo Hiperfoco** | `components/dashboard/HyperfocusPanel.tsx` | Overlay opaco, temporizador de sesión, interrupciones suaves (hidratación/postura/vista). |
 | **Dopamina Operativa** | `components/dashboard/DopamineBar.tsx` | Bloques macizos que se rellenan al cerrar rutinas + racha. Refuerzo visual inmediato. |
@@ -61,7 +62,9 @@ components/
     Dashboard.tsx     Orquestador con estado (capturas, tareas, dopamina, foco)
     BrainDump.tsx     Captura de fricción cero
     CaptureInbox.tsx  Triaje captura → tarea (asigna energía)
-    TimeBlocks.tsx    Rejilla por fase del día
+    TimeBlocks.tsx    Vista Semana: navegador de días + anclas + fases
+    WeekNav.tsx       Pills de día (Lun–Dom), marca HOY y activas por día
+    AnchorStrip.tsx   Franja de citas con hora fija del día seleccionado
     TaskCard.tsx      Tarea + desglose molecular + botón hiperfoco
     HyperfocusPanel.tsx  Overlay de aislamiento + timer + nudges
     DopamineBar.tsx   Racha e hitos de rutina

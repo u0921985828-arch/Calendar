@@ -1,4 +1,4 @@
-import type { DayPhase, EnergyLevel } from "./types";
+import type { DayPhase, EnergyLevel, WeekDay } from "./types";
 
 /**
  * Mapas de senaletica. El color codifica ESTADO, no estetica.
@@ -22,3 +22,12 @@ export const PHASE_META: Record<DayPhase, { label: string; hint: string }> = {
 };
 
 export const PHASE_ORDER: DayPhase[] = ["arranque", "pico", "meseta", "cierre"];
+
+/** Etiquetas de la semana, lunes primero. Indice = WeekDay (0=Lun..6=Dom). */
+export const WEEK_DAYS: string[] = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
+
+/** Dia de hoy como WeekDay (lunes-primero). Llamar en cliente para evitar
+ *  desajustes de hidratacion en SSR. */
+export function todayWeekDay(): WeekDay {
+  return (((new Date().getDay() + 6) % 7) as WeekDay);
+}

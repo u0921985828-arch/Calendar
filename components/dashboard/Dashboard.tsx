@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
+  Anchor,
   CaptureNode,
   DopamineMetric,
   EnergyLevel,
   Task,
+  WeekDay,
 } from "@/lib/types";
-import { SEED_TASKS, SEED_DOPAMINE } from "@/lib/seed";
+import { SEED_TASKS, SEED_DOPAMINE, SEED_ANCHORS, SEED_TODAY } from "@/lib/seed";
+import { todayWeekDay } from "@/lib/design-tokens";
 import { breakdownTask } from "@/lib/breakdown";
 import { makeId } from "@/lib/id";
 import { BrainDump } from "./BrainDump";
@@ -32,8 +35,17 @@ const PHASE_BY_ENERGY: Record<EnergyLevel, Task["phase"]> = {
 export default function Dashboard() {
   const [captures, setCaptures] = useState<CaptureNode[]>([]);
   const [tasks, setTasks] = useState<Task[]>(SEED_TASKS);
+  const [anchors] = useState<Anchor[]>(SEED_ANCHORS);
   const [dopamine, setDopamine] = useState<DopamineMetric>(SEED_DOPAMINE);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
+
+  // La semana arranca en el dia de referencia del seed; al montar en cliente
+  // se marca el HOY real (evita desajuste de hidratacion en SSR).
+  const [selectedDay, setSelectedDay] = useState<WeekDay>(SEED_TODAY as WeekDay);
+  const [today, setToday] = useState<WeekDay | null>(null);
+  useEffect(() => {
+    setToday(todayWeekDay());
+  }, []);
 
   const focusTask = useMemo(
     () => tasks.find((t) => t.id === focusTaskId) ?? null,
@@ -58,6 +70,7 @@ export default function Dashboard() {
       status: "planificada",
       energy,
       phase: PHASE_BY_ENERGY[energy],
+      day: selectedDay,
       steps: [],
     };
     setTasks((prev) => [task, ...prev]);
@@ -139,6 +152,10 @@ export default function Dashboard() {
       <div className="mt-6">
         <TimeBlocks
           tasks={tasks}
+          anchors={anchors}
+          today={today}
+          selectedDay={selectedDay}
+          onSelectDay={setSelectedDay}
           onToggleStep={toggleStep}
           onBreakdown={breakdown}
           onFocus={setFocusTaskId}

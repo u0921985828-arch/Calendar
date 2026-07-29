@@ -25,17 +25,34 @@ export interface MicroStep {
   estimateMin?: number;
 }
 
-/** Tarea macro. Vive en una fase + energia, no en una hora. */
+/** Dia de la semana con lunes primero: 0=Lun .. 6=Dom. */
+export type WeekDay = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/** Tarea macro. Vive en un dia + fase + energia, no en una hora. */
 export interface Task {
   id: string;
   title: string;
   status: TaskStatus;
   energy: EnergyLevel;
   phase: DayPhase;
+  /** Dia de la semana donde cae la tarea. Sigue sin hora estricta. */
+  day: WeekDay;
   /** Descomposicion molecular. Vacia = aun sin desglosar. */
   steps: MicroStep[];
   /** Tarea de mantenimiento rutinario -> alimenta la dopamina operativa. */
   isRoutine?: boolean;
+}
+
+/**
+ * ANCLA: la EXCEPCION con hora fija. Citas, reuniones, tomas de medicacion:
+ * lo unico que de verdad necesita reloj. Convive con el time-blocking por
+ * fases sin contaminarlo.
+ */
+export interface Anchor {
+  id: string;
+  day: WeekDay;
+  time: string; // "HH:MM"
+  label: string;
 }
 
 /** Nodo crudo del Brain Dump antes de ser procesado a Task. */

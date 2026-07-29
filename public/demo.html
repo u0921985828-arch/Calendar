@@ -205,6 +205,40 @@
   .cell { height: 34px; flex: 1; border: 1px solid rgba(255,255,255,0.4); background: transparent; transition: background 0.2s ease; }
   .cell.on { background: var(--action); }
 
+  /* ---------- Navegador de días ---------- */
+  .day-pills { display: flex; gap: 6px; margin-top: 16px; overflow-x: auto; padding-bottom: 2px; }
+  .day-pill {
+    flex: 1 0 auto; min-width: 54px;
+    border: 1px solid var(--ink); background: var(--paper);
+    padding: 8px 6px; text-align: center; cursor: pointer;
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    display: flex; flex-direction: column; gap: 2px; line-height: 1;
+  }
+  .day-pill .dnum { font-size: 15px; }
+  .day-pill.today { box-shadow: inset 0 -4px 0 0 var(--action); }
+  .day-pill.sel { background: var(--ink); color: var(--paper); }
+  .day-pill.sel.today { box-shadow: inset 0 -4px 0 0 var(--action); }
+  .day-pill .tag { font-size: 8px; letter-spacing: 0.1em; color: var(--action); }
+  .day-pill.sel .tag { color: var(--action); }
+  .day-pill .cnt { font-size: 9px; opacity: 0.55; letter-spacing: 0; }
+
+  /* ---------- Anclas (hora fija) ---------- */
+  .anchors { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .anchor {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--ink); border-left: 4px solid var(--focus);
+    background: var(--paper); padding: 6px 10px;
+  }
+  .anchor .time { font-family: var(--mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .anchor .lbl { font-size: 13px; font-weight: 700; }
+  .anchor .pin { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(17,17,17,0.45); }
+  .anchors-empty {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: rgba(17,17,17,0.4);
+    border: 1px dashed rgba(17,17,17,0.3); padding: 8px 12px; width: 100%;
+  }
+
   /* ---------- Time blocks ---------- */
   .blocks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
   @media (max-width: 900px) { .blocks-grid { grid-template-columns: repeat(2,1fr); } }
@@ -352,13 +386,21 @@
     </section>
   </div>
 
-  <!-- 03 · Time blocks -->
+  <!-- 03 · Semana (hibrido: fases sin hora + anclas con hora) -->
   <section class="block spacer">
     <div class="sec-head">
       <span class="idx">03</span>
-      <h2>Bloques</h2>
-      <span class="meta">por fase · sin reloj</span>
+      <h2>Semana</h2>
+      <span class="meta">fases sin reloj · anclas con hora</span>
     </div>
+
+    <!-- Navegador de dias -->
+    <div class="day-pills" id="dayPills" role="tablist" aria-label="Días de la semana"></div>
+
+    <!-- Franja de anclas: citas con hora fija del dia seleccionado -->
+    <div class="anchors" id="anchors"></div>
+
+    <!-- Tablero de fases del dia seleccionado -->
     <div class="blocks-grid" id="blocksGrid"></div>
   </section>
 </div>
@@ -401,20 +443,34 @@
     { key: "cierre",   label: "CIERRE",   hint: "Descarga. Rutina y ordenar." }
   ];
 
+  // Semana con lunes primero. 0=Lun .. 6=Dom.
+  var DAYS = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
+  var todayIdx = (new Date().getDay() + 6) % 7; // getDay: 0=Dom -> reindexa a Lun-first
+  var selectedDay = todayIdx;
+  var tmw = (todayIdx + 1) % 7;
+
+  // Tareas: viven en un DIA + FASE (no en una hora).
   var tasks = [
-    { id:"t1", title:"Cerrar propuesta cliente Nordvik", status:"planificada", energy:"alta", phase:"pico", steps:[
+    { id:"t1", title:"Cerrar propuesta cliente Nordvik", status:"planificada", energy:"alta", phase:"pico", day:todayIdx, steps:[
       { id:"t1s1", label:"Abrir el doc y releer brief", done:true, est:5 },
       { id:"t1s2", label:"Escribir 3 bullets de alcance", done:false, est:15 },
       { id:"t1s3", label:"Pegar precios de la plantilla", done:false, est:10 },
       { id:"t1s4", label:"Enviar a revisión interna", done:false, est:3 }
     ]},
-    { id:"t2", title:"Contestar correos atrasados", status:"planificada", energy:"media", phase:"meseta", steps:[] },
-    { id:"t3", title:"Lavar y guardar la ropa", status:"planificada", energy:"baja", phase:"cierre", routine:true, steps:[
+    { id:"t2", title:"Contestar correos atrasados", status:"planificada", energy:"media", phase:"meseta", day:todayIdx, steps:[] },
+    { id:"t3", title:"Lavar y guardar la ropa", status:"planificada", energy:"baja", phase:"cierre", day:tmw, routine:true, steps:[
       { id:"t3s1", label:"Meter carga a la lavadora", done:true },
       { id:"t3s2", label:"Tender / secadora", done:true },
       { id:"t3s3", label:"Doblar", done:false }
     ]},
-    { id:"t4", title:"Tomar agua + estiramiento matutino", status:"hecha", energy:"baja", phase:"arranque", routine:true, steps:[] }
+    { id:"t4", title:"Tomar agua + estiramiento matutino", status:"hecha", energy:"baja", phase:"arranque", day:todayIdx, routine:true, steps:[] }
+  ];
+
+  // ANCLAS: las EXCEPCIONES con hora fija (citas, reuniones). Sí llevan reloj.
+  var anchors = [
+    { id:"a1", day:todayIdx, time:"09:30", label:"Dentista" },
+    { id:"a2", day:todayIdx, time:"16:00", label:"Reunión de equipo" },
+    { id:"a3", day:tmw,      time:"11:00", label:"Llamada cliente Nordvik" }
   ];
 
   var captures = [];
@@ -629,6 +685,50 @@
     return card;
   }
 
+  // ---------- Render: navegador de días ----------
+  function renderDayPills() {
+    var box = $("#dayPills");
+    box.innerHTML = "";
+    DAYS.forEach(function (name, d) {
+      var active = tasks.filter(function (t) {
+        return t.day === d && t.status !== "hecha";
+      }).length;
+      var cls = "day-pill" + (d === todayIdx ? " today" : "") + (d === selectedDay ? " sel" : "");
+      var pill = el("div", cls);
+      pill.setAttribute("role", "tab");
+      pill.setAttribute("aria-selected", d === selectedDay ? "true" : "false");
+      pill.setAttribute("tabindex", "0");
+      pill.appendChild(el("span", "tag", d === todayIdx ? "HOY" : " "));
+      pill.appendChild(el("span", "dnum", name));
+      pill.appendChild(el("span", "cnt", active ? active + " act." : " "));
+      function pick() { selectedDay = d; renderDayPills(); renderAnchors(); renderBlocks(); }
+      pill.onclick = pick;
+      pill.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } };
+      box.appendChild(pill);
+    });
+  }
+
+  // ---------- Render: anclas (hora fija) del día ----------
+  function renderAnchors() {
+    var box = $("#anchors");
+    box.innerHTML = "";
+    var list = anchors
+      .filter(function (a) { return a.day === selectedDay; })
+      .sort(function (a, b) { return a.time < b.time ? -1 : 1; });
+
+    if (list.length === 0) {
+      box.appendChild(el("div", "anchors-empty", "Sin citas con hora fija este día"));
+      return;
+    }
+    list.forEach(function (a) {
+      var an = el("div", "anchor");
+      an.appendChild(el("span", "pin", "◇ ancla"));
+      an.appendChild(el("span", "time", a.time));
+      an.appendChild(el("span", "lbl", a.label));
+      box.appendChild(an);
+    });
+  }
+
   // ---------- Render: bloques por fase ----------
   function renderBlocks() {
     var grid = $("#blocksGrid");
@@ -640,7 +740,9 @@
       head.appendChild(el("p", null, ph.hint));
       col.appendChild(head);
 
-      var phaseTasks = tasks.filter(function (t) { return t.phase === ph.key; });
+      var phaseTasks = tasks.filter(function (t) {
+        return t.phase === ph.key && t.day === selectedDay;
+      });
       if (phaseTasks.length === 0) {
         col.appendChild(el("p", "phase-empty", "vacío"));
       } else {
@@ -653,7 +755,7 @@
     $("#activeNum").textContent = active;
   }
 
-  function renderAll() { renderInbox(); renderBlocks(); renderDopamine(); }
+  function renderAll() { renderInbox(); renderDayPills(); renderAnchors(); renderBlocks(); renderDopamine(); }
 
   // ---------- Acciones ----------
   function capture(text) {
@@ -666,7 +768,7 @@
     if (!node) return;
     tasks.unshift({
       id: id("task"), title: node.text, status: "planificada",
-      energy: energy, phase: ENERGY[energy].phase, steps: []
+      energy: energy, phase: ENERGY[energy].phase, day: selectedDay, steps: []
     });
     captures = captures.filter(function (c) { return c.id !== capId; });
     renderAll();
