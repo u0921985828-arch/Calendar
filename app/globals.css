@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Tipografia via CDN de sistema. En produccion sustituir por
+ * next/font (self-hosted) para eliminar el flash de fuente.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Roboto+Mono:wght@400;500;700&display=swap");
+
+:root {
+  color-scheme: light;
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-cement text-ink font-sans antialiased;
+  }
+
+  /* Foco visible y duro: accesibilidad no negociable para teclado. */
+  *:focus-visible {
+    @apply outline-none ring-3 ring-focus ring-offset-2 ring-offset-cement;
+  }
+
+  ::selection {
+    @apply bg-action text-ink;
+  }
+}
+
+@layer components {
+  /* Bloque macizo base: borde duro 1px, cero radio, cero sombra difusa. */
+  .block-hard {
+    @apply border border-ink bg-paper;
+  }
+
+  /* Boton de accion primaria. */
+  .btn-hard {
+    @apply inline-flex items-center justify-center border border-ink bg-paper px-4 py-3
+      font-sans font-extrabold uppercase tracking-tight text-ink
+      transition-transform active:translate-x-[2px] active:translate-y-[2px];
+  }
+
+  .btn-action {
+    @apply btn-hard bg-action hover:shadow-hard;
+  }
+}
