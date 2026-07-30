@@ -24,11 +24,13 @@ const config: Config = {
         action: "#B8FF3C", // verde neon -> ejecutar / completar
         focus: "#00E5FF", // cian -> foco / atencion
         signal: "#FFE500", // amarillo -> aviso / energia media
-        alert: "#FF3B30", // rojo -> energia baja / detener
+        alert: "#FF3B30", // rojo -> detener / medicacion (solo emergencia real)
+        calm: "#E7E7E7", // neutro -> energia baja (un dia bajo no es alarma)
       },
+      // Stack de sistema (sin CDN externo: elimina FOUT y fuga de IP).
       fontFamily: {
-        sans: ["Inter", "Helvetica Neue", "Arial", "sans-serif"],
-        mono: ["Roboto Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+        sans: ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Roboto Mono", "monospace"],
       },
       fontSize: {
         // Titulos masivos, jerarquia agresiva

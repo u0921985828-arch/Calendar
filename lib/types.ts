@@ -43,6 +43,9 @@ export interface Task {
   isRoutine?: boolean;
 }
 
+/** Tipo de ancla. La medicacion se trata aparte (recordatorio clinico). */
+export type AnchorKind = "cita" | "medicacion";
+
 /**
  * ANCLA: la EXCEPCION con hora fija. Citas, reuniones, tomas de medicacion:
  * lo unico que de verdad necesita reloj. Convive con el time-blocking por
@@ -53,6 +56,7 @@ export interface Anchor {
   day: WeekDay;
   time: string; // "HH:MM"
   label: string;
+  kind: AnchorKind;
 }
 
 /** Nodo crudo del Brain Dump antes de ser procesado a Task. */
@@ -72,13 +76,23 @@ export interface FocusSession {
 
 export interface SoftNudge {
   atMin: number;
-  kind: "hidratacion" | "postura" | "vista" | "respiracion";
+  /** `vital` marca cuidado basico (comida/medicacion): no descartable a la ligera. */
+  kind: "hidratacion" | "postura" | "vista" | "respiracion" | "comida" | "medicacion";
   label: string;
+  vital?: boolean;
 }
 
-/** Metrica visible del sistema de dopamina operativa. */
+/**
+ * Metrica visible del sistema de dopamina operativa.
+ * Racha INDULGENTE: guarda la mejor marca y un "escudo" que absorbe un fallo,
+ * para no castigar con vergueenza (relevante en RSD).
+ */
 export interface DopamineMetric {
   routineDoneToday: number;
   routineTotalToday: number;
   streakDays: number;
+  /** Mejor racha historica: se muestra aunque la actual caiga. */
+  bestStreak: number;
+  /** Escudo disponible: un fallo no rompe la racha si queda escudo. */
+  shieldAvailable: boolean;
 }

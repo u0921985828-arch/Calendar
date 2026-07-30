@@ -3,405 +3,276 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>NEUROFLOW — Gestión estocástica del tiempo</title>
+<title>NEUROFLOW — Organiza tu día por energía, no por horas</title>
 <style>
-  :root {
+  :root{
     color-scheme: light;
-    --ink: #111111;
-    --paper: #ffffff;
-    --cement: #f4f4f4;
-    --action: #b8ff3c; /* verde neón — ejecutar / energía alta */
-    --focus:  #00e5ff; /* cian — foco / atención */
-    --signal: #ffe500; /* amarillo — energía media */
-    --alert:  #ff3b30; /* rojo — energía baja / detener */
-    --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --mono: ui-monospace, "SF Mono", "Roboto Mono", "Menlo", monospace;
+    --ink:#111; --paper:#fff; --cement:#f4f4f4;
+    --action:#b8ff3c; --focus:#00e5ff; --signal:#ffe500; --alert:#ff3b30;
+    --calm:#e7e7e7; /* neutro para energía baja: ya no rojo */
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Roboto Mono",Menlo,monospace;
   }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cement);color:var(--ink);font-family:var(--sans);line-height:1.4;-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--action);color:var(--ink);}
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 20px 80px;}
 
-  * { box-sizing: border-box; }
+  /* Disclaimer clínico (P0) */
+  .disclaimer{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;line-height:1.5;padding:10px 20px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;text-align:center;}
+  .disclaimer b{color:var(--signal);}
+  .disclaimer button{border:1px solid var(--paper);background:transparent;color:var(--paper);font-family:var(--mono);font-size:11px;text-transform:uppercase;padding:3px 8px;cursor:pointer;}
+  .disclaimer button:hover{background:var(--paper);color:var(--ink);}
 
-  body {
-    margin: 0;
-    background: var(--cement);
-    color: var(--ink);
-    font-family: var(--sans);
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.4;
-  }
+  header.mast{border-bottom:3px solid var(--ink);padding:26px 0 16px;margin-bottom:24px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;}
+  h1.brand{font-size:clamp(2.6rem,7vw,5rem);font-weight:900;line-height:.86;letter-spacing:-.045em;text-transform:uppercase;margin:0;}
+  .tagline{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:rgba(17,17,17,.62);margin-top:10px;}
+  .active-count{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:rgba(17,17,17,.6);text-align:right;}
+  .active-count b{font-size:22px;color:var(--ink);display:block;letter-spacing:0;}
 
-  ::selection { background: var(--action); color: var(--ink); }
+  .block{border:1px solid var(--ink);background:var(--paper);padding:20px;}
+  .grid-top{display:grid;grid-template-columns:2fr 1fr;gap:22px;align-items:start;}
+  .col-left{display:flex;flex-direction:column;gap:22px;}
+  @media (max-width:820px){.grid-top{grid-template-columns:1fr;}}
 
-  :focus-visible {
-    outline: 3px solid var(--focus);
-    outline-offset: 2px;
-  }
+  .sec-head{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--ink);padding-bottom:8px;}
+  .sec-head .idx{font-family:var(--mono);font-size:13px;font-weight:700;color:rgba(17,17,17,.55);}
+  .sec-head h2{font-size:clamp(1.4rem,2.4vw,2rem);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;margin:0;}
+  .sec-head .hint{font-weight:400;font-size:.6em;text-transform:none;letter-spacing:0;color:rgba(17,17,17,.5);}
+  .sec-head .meta{margin-left:auto;font-family:var(--mono);font-size:11px;text-transform:uppercase;color:rgba(17,17,17,.55);}
 
-  .wrap {
-    max-width: 1160px;
-    margin: 0 auto;
-    padding: 32px 20px 80px;
-  }
+  form.dump{display:flex;gap:12px;margin-top:16px;}
+  @media (max-width:520px){form.dump{flex-direction:column;}}
+  input.dump-input{flex:1;border:1px solid var(--ink);background:var(--cement);padding:14px 16px;font-family:var(--mono);font-size:15px;color:var(--ink);}
+  input.dump-input::placeholder{color:rgba(17,17,17,.4);}
 
-  /* ---------- Cabecera de autoridad ---------- */
-  header.masthead {
-    border-bottom: 3px solid var(--ink);
-    padding-bottom: 16px;
-    margin-bottom: 28px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  h1.brand {
-    font-size: clamp(2.6rem, 7vw, 5.2rem);
-    font-weight: 900;
-    line-height: 0.86;
-    letter-spacing: -0.045em;
-    text-transform: uppercase;
-    margin: 0;
-  }
-  .tagline {
-    font-family: var(--mono);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.28em;
-    color: rgba(17,17,17,0.6);
-    margin-top: 8px;
-  }
-  .active-count {
-    font-family: var(--mono);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(17,17,17,0.6);
-    text-align: right;
-  }
-  .active-count b { font-size: 22px; color: var(--ink); display: block; letter-spacing: 0; }
+  button{font-family:var(--sans);cursor:pointer;border:1px solid var(--ink);background:var(--paper);color:var(--ink);font-weight:800;text-transform:uppercase;letter-spacing:-.01em;transition:transform .05s ease,box-shadow .05s ease,background .1s ease;}
+  button:active{transform:translate(2px,2px);}
+  .btn-action{background:var(--action);padding:14px 22px;white-space:nowrap;}
+  .btn-action:hover{box-shadow:4px 4px 0 0 var(--ink);}
 
-  /* ---------- Bloques macizos ---------- */
-  .block {
-    border: 1px solid var(--ink);
-    background: var(--paper);
-    padding: 20px;
-  }
+  /* Bandeja / triaje (P2) */
+  ul.list{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .inbox-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center;}
+  .inbox-tools .lbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:rgba(17,17,17,.5);}
+  .cap-item{display:flex;gap:10px;align-items:center;border:1px solid var(--ink);background:var(--cement);padding:10px 12px;flex-wrap:wrap;}
+  .cap-item .txt{flex:1;font-family:var(--mono);font-size:14px;min-width:140px;}
+  .triage{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+  .triage .lbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:rgba(17,17,17,.5);margin-right:2px;}
+  .e-btn{border:1px solid var(--ink);background:var(--paper);padding:5px 8px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;}
+  .e-btn.alta:hover{background:var(--action);}
+  .e-btn.media:hover{background:var(--signal);}
+  .e-btn.baja:hover{background:var(--calm);}
+  .e-btn.add{background:var(--action);}
+  .e-btn.later:hover{background:var(--focus);}
+  .x-btn:hover{background:var(--alert);color:var(--paper);}
 
-  .grid-top {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 22px;
-    align-items: start;
-  }
-  .col-left { display: flex; flex-direction: column; gap: 22px; }
-  @media (max-width: 780px) {
-    .grid-top { grid-template-columns: 1fr; }
-  }
+  /* Racha indulgente (P1) */
+  .block.dark{background:var(--ink);color:var(--paper);}
+  .streak-row{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.3);padding-bottom:8px;gap:8px;}
+  .streak-row h2{font-size:clamp(1.3rem,2.2vw,1.8rem);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;margin:0;}
+  .streak-num{font-family:var(--mono);font-size:clamp(2.2rem,5vw,3.4rem);line-height:1;color:var(--action);font-variant-numeric:tabular-nums;}
+  .streak-num span{font-size:13px;color:rgba(255,255,255,.6);margin-left:4px;vertical-align:top;}
+  .streak-meta{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .chip-dark{border:1px solid rgba(255,255,255,.4);padding:3px 8px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;}
+  .chip-dark.shield{border-color:var(--focus);color:var(--focus);}
+  .chip-dark.best{color:var(--action);border-color:var(--action);}
+  .routine-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);margin:16px 0 8px;}
+  .cells{display:flex;gap:6px;}
+  .cell{height:32px;flex:1;border:1px solid rgba(255,255,255,.4);background:transparent;transition:background .2s ease;}
+  .cell.on{background:var(--action);}
+  .med-line{margin-top:16px;border-top:1px solid rgba(255,255,255,.3);padding-top:12px;}
+  .med-line .rl{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);}
+  .med-item{display:flex;align-items:center;gap:8px;margin-top:8px;border:1px solid var(--focus);padding:6px 8px;}
+  .med-item .t{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--focus);font-variant-numeric:tabular-nums;}
+  .med-item .n{font-size:13px;font-weight:700;}
 
-  .sec-head {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    border-bottom: 1px solid var(--ink);
-    padding-bottom: 8px;
-  }
-  .sec-head .idx {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: rgba(17,17,17,0.55);
-  }
-  .sec-head h2 {
-    font-size: clamp(1.4rem, 2.4vw, 2rem);
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
-    margin: 0;
-  }
-  .sec-head .meta {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 11px;
-    text-transform: uppercase;
-    color: rgba(17,17,17,0.55);
-  }
+  /* Semana / days (P2 rename, P3 contrast) */
+  .day-pills{display:flex;gap:6px;margin-top:16px;overflow-x:auto;padding-bottom:2px;}
+  .day-pill{flex:1 0 auto;min-width:56px;border:1px solid var(--ink);background:var(--paper);padding:8px 6px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;flex-direction:column;gap:3px;line-height:1;align-items:center;}
+  .day-pill .dnum{font-size:15px;}
+  .day-pill.sel{background:var(--ink);color:var(--paper);}
+  .day-pill .tag{font-size:8px;letter-spacing:.06em;background:var(--action);color:var(--ink);padding:1px 4px;font-weight:800;}
+  .day-pill .tag.empty{background:transparent;color:transparent;}
+  .day-pill .cnt{font-size:9px;opacity:.6;letter-spacing:0;}
 
-  /* ---------- Brain dump ---------- */
-  form.dump { display: flex; gap: 12px; margin-top: 16px; }
-  @media (max-width: 520px) { form.dump { flex-direction: column; } }
-  input.dump-input {
-    flex: 1;
-    border: 1px solid var(--ink);
-    background: var(--cement);
-    padding: 14px 16px;
-    font-family: var(--mono);
-    font-size: 15px;
-    color: var(--ink);
-  }
-  input.dump-input::placeholder { color: rgba(17,17,17,0.4); }
+  .anchors{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .anchor{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ink);border-left:4px solid var(--focus);background:var(--paper);padding:6px 10px;}
+  .anchor.med{border-left-color:var(--alert);}
+  .anchor .time{font-family:var(--mono);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .anchor .lbl{font-size:13px;font-weight:700;}
+  .anchor .pin{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(17,17,17,.45);}
+  .anchors-empty{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(17,17,17,.4);border:1px dashed rgba(17,17,17,.3);padding:8px 12px;width:100%;}
 
-  button {
-    font-family: var(--sans);
-    cursor: pointer;
-    border: 1px solid var(--ink);
-    background: var(--paper);
-    color: var(--ink);
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: -0.01em;
-    transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.1s ease;
-  }
-  button:active { transform: translate(2px, 2px); }
+  .blocks-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px;}
+  @media (max-width:900px){.blocks-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:520px){.blocks-grid{grid-template-columns:1fr;}}
+  .phase-col{border:1px solid var(--ink);background:var(--cement);padding:12px;display:flex;flex-direction:column;gap:12px;}
+  .phase-col.now{background:var(--paper);box-shadow:inset 4px 0 0 0 var(--focus);}
+  .phase-head{border-bottom:1px solid var(--ink);padding-bottom:8px;}
+  .phase-head .row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .phase-head h3{margin:0;font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;}
+  .phase-head .now-tag{font-family:var(--mono);font-size:9px;font-weight:800;text-transform:uppercase;background:var(--focus);color:var(--ink);padding:1px 5px;}
+  .phase-head p{margin:4px 0 0;font-size:11px;color:rgba(17,17,17,.6);}
+  .phase-head .load{margin-top:6px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:rgba(17,17,17,.55);}
+  .phase-head .load.over{color:var(--alert);font-weight:700;}
+  .phase-empty{text-align:center;font-family:var(--mono);font-size:11px;text-transform:uppercase;color:rgba(17,17,17,.3);padding:18px 0;}
 
-  .btn-action {
-    background: var(--action);
-    padding: 14px 22px;
-    white-space: nowrap;
-  }
-  .btn-action:hover { box-shadow: 4px 4px 0 0 var(--ink); }
+  .task{border:1px solid var(--ink);background:var(--paper);padding:12px;}
+  .task.done{opacity:.5;}
+  .task-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+  .task-title{font-size:15px;font-weight:800;line-height:1.15;}
+  .task.done .task-title{text-decoration:line-through;}
+  .chip{display:inline-flex;align-items:center;border:1px solid var(--ink);padding:2px 7px;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;}
+  .chip.alta{background:var(--action);}
+  .chip.media{background:var(--signal);}
+  .chip.baja{background:var(--calm);}
+  .routine-tag{display:inline-block;margin-top:8px;border:1px solid var(--ink);background:var(--cement);padding:2px 7px;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
+  .steps{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .step-row{display:flex;align-items:center;gap:8px;border:1px solid var(--ink);background:var(--cement);padding:6px 8px;}
+  .step-row .cb{appearance:none;-webkit-appearance:none;position:relative;width:18px;height:18px;border:1px solid var(--ink);background:var(--paper);flex-shrink:0;cursor:pointer;margin:0;}
+  .step-row .cb:checked{background:var(--action);}
+  .step-row .cb:checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:var(--ink);}
+  .step-label{font-family:var(--mono);font-size:13px;flex:1;cursor:pointer;}
+  .step-row.done .step-label{color:rgba(17,17,17,.4);text-decoration:line-through;}
+  .step-est{font-family:var(--mono);font-size:11px;color:rgba(17,17,17,.5);}
+  .step-del{border:1px solid var(--ink);background:var(--paper);font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 6px;line-height:1.4;}
+  .step-del:hover{background:var(--alert);color:var(--paper);}
+  .step-add{display:flex;gap:6px;margin-top:6px;}
+  .step-add input{flex:1;border:1px solid var(--ink);background:var(--paper);padding:5px 8px;font-family:var(--mono);font-size:12px;}
+  .step-add button{padding:5px 10px;font-size:11px;}
+  .btn-breakdown{width:100%;margin-top:12px;padding:8px;font-size:13px;}
+  .btn-breakdown:hover{background:var(--focus);}
+  .redo{margin-top:8px;background:none;border:none;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:rgba(17,17,17,.55);text-decoration:underline;padding:0;cursor:pointer;font-weight:400;}
+  .task-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:8px;}
+  .task-foot .prog{font-family:var(--mono);font-size:11px;text-transform:uppercase;color:rgba(17,17,17,.6);}
+  .btn-focus{padding:6px 10px;font-size:11px;}
+  .btn-focus:hover{background:var(--focus);}
+  .foot-done{font-family:var(--mono);font-size:11px;font-weight:700;text-transform:uppercase;}
+  section.spacer{margin-top:22px;}
+  .persist-note{font-family:var(--mono);font-size:10px;color:rgba(17,17,17,.45);text-transform:uppercase;letter-spacing:.05em;margin-top:14px;text-align:right;}
 
-  .btn-line {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-  .btn-line:hover { background: var(--focus); }
+  /* Hiperfoco (P0 contención) */
+  .overlay{position:fixed;inset:0;z-index:50;background:var(--ink);color:var(--paper);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+  .overlay.open{display:flex;}
+  .overlay .exit{position:absolute;top:20px;right:20px;border:1px solid rgba(255,255,255,.4);background:transparent;color:rgba(255,255,255,.7);padding:6px 12px;font-family:var(--mono);font-size:11px;text-transform:uppercase;}
+  .overlay .exit:hover{background:var(--paper);color:var(--ink);}
+  .overlay .kicker{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.3em;color:rgba(255,255,255,.5);}
+  .overlay .streaknote{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:6px;}
+  .overlay .of-title{font-size:clamp(1.6rem,4vw,2.8rem);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;max-width:700px;margin:12px 0 0;}
+  .overlay .of-step{margin-top:14px;border:1px solid rgba(255,255,255,.3);padding:8px 16px;font-family:var(--mono);font-size:14px;color:var(--focus);}
+  .overlay .clock{margin-top:34px;font-family:var(--mono);font-size:clamp(3.2rem,11vw,6.4rem);line-height:1;color:var(--focus);font-variant-numeric:tabular-nums;}
+  .overlay .clock.done{color:var(--action);}
+  .overlay .ctrls{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+  .overlay .ctrls button{padding:12px 26px;font-size:15px;}
+  .of-pause{background:transparent;color:var(--paper);border-color:var(--paper);}
+  .of-pause:hover{background:var(--paper);color:var(--ink);}
+  .of-end{background:var(--action);border-color:var(--action);color:var(--ink);}
+  .of-mute{background:transparent;color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.4);font-size:11px!important;padding:8px 14px!important;}
+  .nudge{position:absolute;inset-inline:0;bottom:0;border-top:1px solid var(--focus);background:var(--focus);color:var(--ink);padding:16px 24px;display:none;}
+  .nudge.show{display:block;}
+  .nudge.vital{background:var(--signal);border-top-color:var(--ink);}
+  .nudge p{margin:0;font-family:var(--mono);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
+  .nudge button{margin-top:8px;border-color:var(--ink);background:transparent;padding:5px 14px;font-size:11px;}
+  .nudge button:hover{background:var(--ink);color:var(--paper);}
+  /* Pausa obligatoria al cierre */
+  .breakscreen{position:absolute;inset:0;background:var(--ink);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;}
+  .breakscreen.show{display:flex;}
+  .breakscreen .big{font-size:clamp(1.4rem,3vw,2.2rem);font-weight:900;text-transform:uppercase;color:var(--action);}
+  .breakscreen .cd{font-family:var(--mono);font-size:3rem;color:var(--paper);font-variant-numeric:tabular-nums;}
+  .breakscreen p{font-family:var(--mono);font-size:13px;color:rgba(255,255,255,.7);max-width:420px;}
+  .breakscreen button{padding:12px 24px;}
+  .breakscreen button:disabled{opacity:.4;cursor:not-allowed;}
 
-  /* ---------- Bandeja / triaje ---------- */
-  ul.list { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-  .cap-item {
-    display: flex; gap: 10px; align-items: center;
-    border: 1px solid var(--ink);
-    background: var(--cement);
-    padding: 10px 12px;
-    flex-wrap: wrap;
-  }
-  .cap-item .txt { flex: 1; font-family: var(--mono); font-size: 14px; min-width: 140px; }
-  .triage { display: flex; align-items: center; gap: 4px; }
-  .triage .lbl { font-family: var(--mono); font-size: 10px; text-transform: uppercase; color: rgba(17,17,17,0.5); margin-right: 2px; }
-  .e-btn {
-    border: 1px solid var(--ink);
-    background: var(--paper);
-    padding: 5px 8px;
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-  }
-  .e-btn.alta:hover { background: var(--action); }
-  .e-btn.media:hover { background: var(--signal); }
-  .e-btn.baja:hover { background: var(--alert); color: var(--paper); }
-  .x-btn:hover { background: var(--alert); color: var(--paper); }
-  .empty-inbox { display: none; }
+  /* Onboarding (P2) */
+  .onb{position:fixed;inset:0;z-index:60;background:rgba(17,17,17,.92);display:none;align-items:center;justify-content:center;padding:24px;}
+  .onb.open{display:flex;}
+  .onb-card{background:var(--paper);border:3px solid var(--ink);max-width:440px;width:100%;padding:26px;}
+  .onb-card .step-n{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:rgba(17,17,17,.5);}
+  .onb-card h3{font-size:1.6rem;font-weight:900;text-transform:uppercase;letter-spacing:-.02em;margin:6px 0 0;}
+  .onb-card p{font-size:15px;margin:12px 0 0;}
+  .onb-card .nav{display:flex;justify-content:space-between;align-items:center;margin-top:22px;}
+  .onb-dots{display:flex;gap:6px;}
+  .onb-dots i{width:9px;height:9px;border:1px solid var(--ink);display:block;}
+  .onb-dots i.on{background:var(--ink);}
+  .onb-card .btn-action{padding:10px 18px;}
+  .onb-skip{background:none;border:none;font-family:var(--mono);font-size:11px;text-transform:uppercase;color:rgba(17,17,17,.5);cursor:pointer;text-decoration:underline;}
 
-  /* ---------- Dopamina / racha ---------- */
-  .block.dark { background: var(--ink); color: var(--paper); }
-  .dark .sec-head { border-color: rgba(255,255,255,0.3); }
-  .dark .sec-head h2 { color: var(--paper); }
-  .streak-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 8px; }
-  .streak-row h2 { font-size: clamp(1.4rem,2.4vw,2rem); font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; margin: 0; }
-  .streak-num { font-family: var(--mono); font-size: clamp(2.4rem,5vw,3.6rem); line-height: 1; color: var(--action); font-variant-numeric: tabular-nums; }
-  .streak-num span { font-size: 14px; color: rgba(255,255,255,0.6); margin-left: 4px; vertical-align: top; }
-  .routine-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.6); margin: 18px 0 8px; }
-  .cells { display: flex; gap: 6px; }
-  .cell { height: 34px; flex: 1; border: 1px solid rgba(255,255,255,0.4); background: transparent; transition: background 0.2s ease; }
-  .cell.on { background: var(--action); }
-
-  /* ---------- Navegador de días ---------- */
-  .day-pills { display: flex; gap: 6px; margin-top: 16px; overflow-x: auto; padding-bottom: 2px; }
-  .day-pill {
-    flex: 1 0 auto; min-width: 54px;
-    border: 1px solid var(--ink); background: var(--paper);
-    padding: 8px 6px; text-align: center; cursor: pointer;
-    font-family: var(--mono); font-size: 12px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    display: flex; flex-direction: column; gap: 2px; line-height: 1;
-  }
-  .day-pill .dnum { font-size: 15px; }
-  .day-pill.today { box-shadow: inset 0 -4px 0 0 var(--action); }
-  .day-pill.sel { background: var(--ink); color: var(--paper); }
-  .day-pill.sel.today { box-shadow: inset 0 -4px 0 0 var(--action); }
-  .day-pill .tag { font-size: 8px; letter-spacing: 0.1em; color: var(--action); }
-  .day-pill.sel .tag { color: var(--action); }
-  .day-pill .cnt { font-size: 9px; opacity: 0.55; letter-spacing: 0; }
-
-  /* ---------- Anclas (hora fija) ---------- */
-  .anchors { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  .anchor {
-    display: inline-flex; align-items: center; gap: 8px;
-    border: 1px solid var(--ink); border-left: 4px solid var(--focus);
-    background: var(--paper); padding: 6px 10px;
-  }
-  .anchor .time { font-family: var(--mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .anchor .lbl { font-size: 13px; font-weight: 700; }
-  .anchor .pin { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(17,17,17,0.45); }
-  .anchors-empty {
-    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.08em; color: rgba(17,17,17,0.4);
-    border: 1px dashed rgba(17,17,17,0.3); padding: 8px 12px; width: 100%;
-  }
-
-  /* ---------- Time blocks ---------- */
-  .blocks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
-  @media (max-width: 900px) { .blocks-grid { grid-template-columns: repeat(2,1fr); } }
-  @media (max-width: 520px) { .blocks-grid { grid-template-columns: 1fr; } }
-  .phase-col { border: 1px solid var(--ink); background: var(--cement); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
-  .phase-head { border-bottom: 1px solid var(--ink); padding-bottom: 8px; }
-  .phase-head h3 { margin: 0; font-family: var(--mono); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; }
-  .phase-head p { margin: 4px 0 0; font-size: 11px; color: rgba(17,17,17,0.6); }
-  .phase-empty { text-align: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: rgba(17,17,17,0.3); padding: 18px 0; }
-
-  /* ---------- Task card ---------- */
-  .task {
-    border: 1px solid var(--ink);
-    background: var(--paper);
-    padding: 12px;
-  }
-  .task.done { opacity: 0.45; }
-  .task-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
-  .task-title { font-size: 15px; font-weight: 800; line-height: 1.15; }
-  .task.done .task-title { text-decoration: line-through; }
-  .chip {
-    display: inline-flex; align-items: center;
-    border: 1px solid var(--ink);
-    padding: 2px 7px;
-    font-family: var(--mono);
-    font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    white-space: nowrap;
-  }
-  .chip.alta { background: var(--action); }
-  .chip.media { background: var(--signal); }
-  .chip.baja { background: var(--alert); color: var(--paper); }
-  .routine-tag {
-    display: inline-block; margin-top: 8px;
-    border: 1px solid var(--ink); background: var(--cement);
-    padding: 2px 7px; font-family: var(--mono); font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.08em;
-  }
-  .steps { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  .step-row {
-    display: flex; align-items: center; gap: 8px;
-    border: 1px solid var(--ink); background: var(--cement);
-    padding: 6px 8px; cursor: pointer;
-  }
-  .step-row input { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border: 1px solid var(--ink); background: var(--paper); flex-shrink: 0; cursor: pointer; margin: 0; }
-  .step-row input:checked { background: var(--action); }
-  .step-label { font-family: var(--mono); font-size: 13px; }
-  .step-row.done .step-label { color: rgba(17,17,17,0.4); text-decoration: line-through; }
-  .step-est { margin-left: auto; font-family: var(--mono); font-size: 11px; color: rgba(17,17,17,0.5); }
-  .btn-breakdown { width: 100%; margin-top: 12px; padding: 8px; font-size: 13px; }
-  .btn-breakdown:hover { background: var(--focus); }
-  .task-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
-  .task-foot .prog { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: rgba(17,17,17,0.6); }
-  .btn-focus { padding: 6px 10px; font-size: 11px; }
-  .btn-focus:hover { background: var(--focus); }
-  .foot-done { font-family: var(--mono); font-size: 11px; font-weight: 700; text-transform: uppercase; }
-
-  section.spacer { margin-top: 22px; }
-
-  /* ---------- Hiperfoco overlay ---------- */
-  .overlay {
-    position: fixed; inset: 0; z-index: 50;
-    background: var(--ink); color: var(--paper);
-    display: none; flex-direction: column; align-items: center; justify-content: center;
-    padding: 24px; text-align: center;
-  }
-  .overlay.open { display: flex; }
-  .overlay .exit {
-    position: absolute; top: 20px; right: 20px;
-    border: 1px solid rgba(255,255,255,0.4); background: transparent; color: rgba(255,255,255,0.7);
-    padding: 6px 12px; font-family: var(--mono); font-size: 11px;
-  }
-  .overlay .exit:hover { background: var(--paper); color: var(--ink); }
-  .overlay .kicker { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.3em; color: rgba(255,255,255,0.5); }
-  .overlay .of-title { font-size: clamp(1.6rem, 4vw, 2.8rem); font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; max-width: 700px; margin: 12px 0 0; }
-  .overlay .of-step { margin-top: 14px; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; font-family: var(--mono); font-size: 14px; color: var(--focus); }
-  .overlay .clock { margin-top: 40px; font-family: var(--mono); font-size: clamp(3.5rem, 12vw, 7rem); line-height: 1; color: var(--focus); font-variant-numeric: tabular-nums; }
-  .overlay .clock.done { color: var(--action); }
-  .overlay .ctrls { margin-top: 32px; display: flex; gap: 12px; }
-  .overlay .ctrls button { padding: 12px 26px; font-size: 15px; }
-  .of-pause { background: transparent; color: var(--paper); border-color: var(--paper); }
-  .of-pause:hover { background: var(--paper); color: var(--ink); }
-  .of-end { background: var(--action); border-color: var(--action); color: var(--ink); }
-  .nudge {
-    position: absolute; inset-inline: 0; bottom: 0;
-    border-top: 1px solid var(--focus); background: var(--focus); color: var(--ink);
-    padding: 16px 24px; display: none;
-  }
-  .nudge.show { display: block; }
-  .nudge p { margin: 0; font-family: var(--mono); font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
-  .nudge button { margin-top: 8px; border-color: var(--ink); background: transparent; padding: 5px 14px; font-size: 11px; }
-  .nudge button:hover { background: var(--ink); color: var(--paper); }
-
-  @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
-  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
 <body>
 
+<div class="disclaimer" id="disclaimer">
+  <span>⚠ <b>No es un dispositivo médico</b> ni sustituye tratamiento, terapia o medicación. Si estás en crisis, busca ayuda profesional.</span>
+  <button id="discOk">Entendido</button>
+</div>
+
 <div class="wrap">
-  <header class="masthead">
+  <header class="mast">
     <div>
       <h1 class="brand">Neuroflow</h1>
-      <div class="tagline">Gestión estocástica del tiempo · TDAH + AACC</div>
+      <div class="tagline">Organiza tu día por energía, no por horas</div>
     </div>
-    <div class="active-count"><b id="activeNum">3</b> tareas activas</div>
+    <div class="active-count"><b id="activeNum">3</b> cosas por hacer</div>
   </header>
 
   <div class="grid-top">
     <div class="col-left">
-      <!-- 01 · Brain dump -->
+      <!-- 01 · Suéltalo -->
       <section class="block">
         <div class="sec-head">
           <span class="idx">01</span>
-          <h2>Brain Dump</h2>
+          <h2>Suéltalo <span class="hint">— escribe sin pensar</span></h2>
           <span class="meta" id="inboxMeta">0 en bandeja</span>
         </div>
         <form class="dump" id="dumpForm">
           <input class="dump-input" id="dumpInput" autocomplete="off"
-                 placeholder="Suelta lo que tengas en la cabeza. No pienses, escribe." aria-label="Captura rápida" />
-          <button type="submit" class="btn-action">Capturar</button>
+                 placeholder="¿Qué tienes en la cabeza? Escríbelo y ya." aria-label="Captura rápida" />
+          <button type="submit" class="btn-action">Guardar</button>
         </form>
       </section>
 
-      <!-- 02 · Bandeja / triaje -->
-      <section class="block empty-inbox" id="inboxBlock">
+      <!-- 02 · Bandeja -->
+      <section class="block" id="inboxBlock" style="display:none">
         <div class="sec-head">
           <span class="idx">02</span>
-          <h2>Bandeja</h2>
-          <span class="meta">triaje diferido</span>
+          <h2>Bandeja <span class="hint">— decide luego, sin prisa</span></h2>
+          <span class="meta">al día que estés viendo</span>
         </div>
+        <div class="inbox-tools" id="inboxTools"></div>
         <ul class="list" id="inboxList"></ul>
       </section>
     </div>
 
-    <!-- Dopamina operativa -->
+    <!-- Racha + medicación -->
     <section class="block dark">
       <div class="streak-row">
         <h2>Racha</h2>
         <div class="streak-num" id="streakNum">12<span>días</span></div>
       </div>
+      <div class="streak-meta" id="streakMeta"></div>
       <p class="routine-label">Rutina de hoy · <span id="routineText">3/6</span></p>
       <div class="cells" id="cells"></div>
+      <div class="med-line">
+        <div class="rl">Medicación de hoy</div>
+        <div id="medList"></div>
+      </div>
     </section>
   </div>
 
-  <!-- 03 · Semana (hibrido: fases sin hora + anclas con hora) -->
+  <!-- 03 · Semana -->
   <section class="block spacer">
     <div class="sec-head">
       <span class="idx">03</span>
-      <h2>Semana</h2>
-      <span class="meta">fases sin reloj · anclas con hora</span>
+      <h2>Tu semana <span class="hint">— por momentos del día, no por reloj</span></h2>
+      <span class="meta">citas con hora aparte</span>
     </div>
-
-    <!-- Navegador de dias -->
     <div class="day-pills" id="dayPills" role="tablist" aria-label="Días de la semana"></div>
-
-    <!-- Franja de anclas: citas con hora fija del dia seleccionado -->
     <div class="anchors" id="anchors"></div>
-
-    <!-- Tablero de fases del dia seleccionado -->
     <div class="blocks-grid" id="blocksGrid"></div>
+    <p class="persist-note" id="persistNote">Guardado en este dispositivo · demo local</p>
   </section>
 </div>
 
@@ -409,482 +280,413 @@
 <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Modo hiperfoco">
   <button class="exit" id="ofExit">Salir · Esc</button>
   <div class="kicker">Hiperfoco</div>
+  <div class="streaknote" id="ofSessions"></div>
   <h2 class="of-title" id="ofTitle"></h2>
   <div class="of-step" id="ofStep" style="display:none"></div>
   <div class="clock" id="ofClock">50:00</div>
   <div class="ctrls">
     <button class="of-pause" id="ofPause">Pausa</button>
     <button class="of-end" id="ofEnd">Terminar</button>
+    <button class="of-mute" id="ofMute">Silenciar avisos</button>
   </div>
   <div class="nudge" id="nudge">
     <p id="nudgeText"></p>
     <button id="nudgeAck">Hecho, sigo</button>
+  </div>
+  <div class="breakscreen" id="breakScreen">
+    <div class="big">Pausa obligatoria</div>
+    <div class="cd" id="breakCd">02:00</div>
+    <p>Levántate, estira, bebe agua. El hiperfoco quema; el descanso es parte del trabajo, no una interrupción.</p>
+    <button class="btn-action" id="breakDone" disabled>Espera…</button>
+  </div>
+</div>
+
+<!-- Onboarding -->
+<div class="onb" id="onb">
+  <div class="onb-card">
+    <div class="step-n" id="onbStepN">Paso 1 de 3</div>
+    <h3 id="onbTitle"></h3>
+    <p id="onbBody"></p>
+    <div class="nav">
+      <button class="onb-skip" id="onbSkip">Saltar</button>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="onb-dots" id="onbDots"></div>
+        <button class="btn-action" id="onbNext">Siguiente</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 (function () {
   "use strict";
+  var LS = window.localStorage;
 
-  // ---------- Estado ----------
+  // ---------- Persistencia (P0) ----------
+  // Demo: localStorage. En producción, cifrado en reposo (WebCrypto) o backend
+  // con control de acceso + consentimiento, por tratarse de datos de salud.
+  function save() {
+    try { LS.setItem("nf_state", JSON.stringify({ tasks: tasks, captures: captures, dopamine: dopamine, anchors: anchors })); } catch (e) {}
+  }
+  function load() {
+    try { var r = LS.getItem("nf_state"); return r ? JSON.parse(r) : null; } catch (e) { return null; }
+  }
+
   var uid = 0;
-  function id(p) { uid++; return (p || "n") + uid; }
+  function id(p) { uid++; return (p || "n") + uid + "_" + (uid * 2654435761 % 100000); }
 
-  var ENERGY = {
-    alta:  { label: "ALTA",  phase: "pico"   },
-    media: { label: "MEDIA", phase: "meseta" },
-    baja:  { label: "BAJA",  phase: "cierre" }
-  };
-
-  var PHASES = [
-    { key: "arranque", label: "ARRANQUE", hint: "Encendido lento. Baja carga." },
-    { key: "pico",     label: "PICO",     hint: "Máxima capacidad. Alta energía." },
-    { key: "meseta",   label: "MESETA",   hint: "Sostener. Ejecución media." },
-    { key: "cierre",   label: "CIERRE",   hint: "Descarga. Rutina y ordenar." }
-  ];
-
-  // Semana con lunes primero. 0=Lun .. 6=Dom.
-  var DAYS = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
-  var todayIdx = (new Date().getDay() + 6) % 7; // getDay: 0=Dom -> reindexa a Lun-first
+  var DAYS = ["LUN","MAR","MIÉ","JUE","VIE","SÁB","DOM"];
+  var todayIdx = (new Date().getDay() + 6) % 7;
   var selectedDay = todayIdx;
   var tmw = (todayIdx + 1) % 7;
 
-  // Tareas: viven en un DIA + FASE (no en una hora).
-  var tasks = [
-    { id:"t1", title:"Cerrar propuesta cliente Nordvik", status:"planificada", energy:"alta", phase:"pico", day:todayIdx, steps:[
-      { id:"t1s1", label:"Abrir el doc y releer brief", done:true, est:5 },
-      { id:"t1s2", label:"Escribir 3 bullets de alcance", done:false, est:15 },
-      { id:"t1s3", label:"Pegar precios de la plantilla", done:false, est:10 },
-      { id:"t1s4", label:"Enviar a revisión interna", done:false, est:3 }
-    ]},
-    { id:"t2", title:"Contestar correos atrasados", status:"planificada", energy:"media", phase:"meseta", day:todayIdx, steps:[] },
-    { id:"t3", title:"Lavar y guardar la ropa", status:"planificada", energy:"baja", phase:"cierre", day:tmw, routine:true, steps:[
-      { id:"t3s1", label:"Meter carga a la lavadora", done:true },
-      { id:"t3s2", label:"Tender / secadora", done:true },
-      { id:"t3s3", label:"Doblar", done:false }
-    ]},
-    { id:"t4", title:"Tomar agua + estiramiento matutino", status:"hecha", energy:"baja", phase:"arranque", day:todayIdx, routine:true, steps:[] }
+  // Fases renombradas a lenguaje llano (P2)
+  var PHASES = [
+    { key:"arranque", label:"PARA EMPEZAR", hint:"Encendido lento. Cosas suaves.", h:[5,9] },
+    { key:"pico",     label:"A TOPE",       hint:"Máxima capacidad. Lo difícil.",  h:[9,13] },
+    { key:"meseta",   label:"RITMO SUAVE",  hint:"Sostener. Ejecución media.",     h:[13,18] },
+    { key:"cierre",   label:"CERRAR EL DÍA",hint:"Descarga. Rutina y ordenar.",    h:[18,29] }
   ];
-
-  // ANCLAS: las EXCEPCIONES con hora fija (citas, reuniones). Sí llevan reloj.
-  var anchors = [
-    { id:"a1", day:todayIdx, time:"09:30", label:"Dentista" },
-    { id:"a2", day:todayIdx, time:"16:00", label:"Reunión de equipo" },
-    { id:"a3", day:tmw,      time:"11:00", label:"Llamada cliente Nordvik" }
-  ];
-
-  var captures = [];
-  var dopamine = { done: 3, total: 6, streak: 12 };
-
-  // ---------- Desglose algorítmico ----------
-  // En producción esto lo genera Claude a partir del texto + contexto de la
-  // tarea (ver lib/breakdown.ts). Aquí, sin backend, aproximamos con un
-  // clasificador local: detecta la NATURALEZA de la tarea e inyecta el objeto
-  // real de la frase, para que los pasos hablen de ESA tarea y no de un molde.
-
-  var VERBS = ["cerrar","abrir","escribir","redactar","contestar","responder","enviar",
-    "llamar","agendar","reunir","lavar","limpiar","ordenar","comprar","pedir","pagar",
-    "estudiar","leer","repasar","arreglar","implementar","programar","preparar","hacer",
-    "revisar","terminar","organizar","planificar","buscar","actualizar","mandar","entregar"];
-
-  // Devuelve el "objeto" de la tarea: la frase sin el verbo/artículo inicial.
-  function objectOf(title) {
-    var words = title.trim().split(/\s+/);
-    if (words.length > 1) {
-      var w0 = words[0].toLowerCase();
-      var isVerb = VERBS.indexOf(w0) !== -1 || (w0.length > 3 && /(ar|er|ir)$/.test(w0));
-      if (isVerb) words = words.slice(1);
-      while (words.length > 1 && /^(a|el|la|los|las|un|una|de|del|mi|mis|tu|los)$/i.test(words[0])) {
-        words = words.slice(1);
-      }
+  function currentPhaseKey() {
+    var h = new Date().getHours();
+    for (var i = 0; i < PHASES.length; i++) {
+      var a = PHASES[i].h[0], b = PHASES[i].h[1];
+      if (h >= a && h < (b > 24 ? b - 24 + 24 : b)) return PHASES[i].key;
+      if (b > 24 && (h >= a || h < b - 24)) return PHASES[i].key;
     }
-    var obj = words.slice(0, 6).join(" ");
-    return obj || title.trim();
+    return "cierre";
   }
 
-  // Recetas por tipo. %s = objeto de la tarea. Primera coincidencia gana.
-  var RECIPES = [
-    { kw: ["correo","correos","email","mail","bandeja","responder","contestar"], steps: [
-      { l: "Abrir la bandeja y filtrar: %s", e: 3 },
-      { l: "Marcar los 3 más urgentes", e: 2 },
-      { l: "Responder el más urgente (respuesta corta)", e: 8 },
-      { l: "Contestar el resto en bloque", e: 12 },
-      { l: "Archivar y vaciar la bandeja", e: 3 } ] },
-    { kw: ["propuesta","documento","doc","informe","reporte","memo","presentación","presentacion"], steps: [
-      { l: "Abrir el documento y releer el objetivo de: %s", e: 5 },
-      { l: "Esquematizar el alcance en 3 bullets", e: 10 },
-      { l: "Redactar el cuerpo sección por sección", e: 20 },
-      { l: "Revisar datos, precios y formato", e: 8 },
-      { l: "Enviar a revisión / entregar", e: 3 } ] },
-    { kw: ["llamar","llamada","reunión","reunion","cita","contactar","agendar"], steps: [
-      { l: "Anotar en 1 frase el objetivo de: %s", e: 2 },
-      { l: "Buscar el contacto y el mejor horario", e: 3 },
-      { l: "Escribir los 3 puntos a tratar", e: 5 },
-      { l: "Hacer la llamada / reunión", e: 15 },
-      { l: "Anotar acuerdos y el siguiente paso", e: 3 } ] },
-    { kw: ["lavar","ropa","limpiar","limpieza","ordenar","cocina","platos","basura","aspirar","casa","baño","bano"], steps: [
-      { l: "Reunir lo necesario para: %s", e: 3 },
-      { l: "Empezar por la zona más visible", e: 5 },
-      { l: "Completar la tarea física", e: 15 },
-      { l: "Guardar / tender / secar", e: 8 },
-      { l: "Dejar el espacio despejado", e: 4 } ] },
-    { kw: ["comprar","compra","mercado","super","supermercado","pedir"], steps: [
-      { l: "Listar lo que hace falta: %s", e: 4 },
-      { l: "Revisar qué ya hay en casa", e: 3 },
-      { l: "Elegir tienda / app y horario", e: 3 },
-      { l: "Hacer la compra", e: 20 },
-      { l: "Guardar y tachar de la lista", e: 5 } ] },
-    { kw: ["pagar","pago","factura","banco","recibo","impuesto","transferencia","cuenta"], steps: [
-      { l: "Reunir monto y datos de: %s", e: 3 },
-      { l: "Abrir la app / banco y verificar saldo", e: 2 },
-      { l: "Introducir los datos del pago", e: 4 },
-      { l: "Confirmar y guardar el comprobante", e: 2 },
-      { l: "Anotarlo en el registro de gastos", e: 2 } ] },
-    { kw: ["estudiar","leer","lectura","repasar","aprender","curso","examen","apuntes"], steps: [
-      { l: "Abrir el material: %s", e: 3 },
-      { l: "Ojear el índice y fijar la meta de hoy", e: 4 },
-      { l: "Leer / estudiar un bloque (25 min)", e: 25 },
-      { l: "Resumir en 3 frases lo clave", e: 8 },
-      { l: "Marcar dónde retomar mañana", e: 2 } ] },
-    { kw: ["escribir","redactar","artículo","articulo","post","blog","texto","guion","guión","ensayo"], steps: [
-      { l: "Definir en 1 frase de qué trata: %s", e: 3 },
-      { l: "Volcar ideas en bruto (sin editar)", e: 10 },
-      { l: "Ordenar en intro · cuerpo · cierre", e: 8 },
-      { l: "Redactar el borrador completo", e: 25 },
-      { l: "Revisar y pulir", e: 10 } ] },
-    { kw: ["código","codigo","bug","programar","implementar","deploy","test","función","funcion","arreglar"], steps: [
-      { l: "Reproducir / entender: %s", e: 8 },
-      { l: "Localizar el archivo o la causa", e: 10 },
-      { l: "Escribir el cambio mínimo", e: 20 },
-      { l: "Probar (test / manual)", e: 8 },
-      { l: "Commit y push", e: 3 } ] },
-    { kw: ["ejercicio","correr","gimnasio","gym","entrenar","caminar","yoga","estirar","estiramiento","agua","hidrat"], steps: [
-      { l: "Preparar ropa / espacio para: %s", e: 3 },
-      { l: "Calentar 3 min", e: 3 },
-      { l: "Hacer el bloque principal", e: 20 },
-      { l: "Enfriar / estirar", e: 5 },
-      { l: "Registrar que lo hiciste", e: 1 } ] }
-  ];
+  var ENERGY = {
+    alta:  { label:"ALTA",  phase:"pico" },
+    media: { label:"MEDIA", phase:"meseta" },
+    baja:  { label:"BAJA",  phase:"cierre" }
+  };
 
-  function breakdown(title) {
-    var obj = objectOf(title);
-    var low = title.toLowerCase();
-    var recipe = null;
-    for (var i = 0; i < RECIPES.length && !recipe; i++) {
-      for (var j = 0; j < RECIPES[i].kw.length; j++) {
-        if (low.indexOf(RECIPES[i].kw[j]) !== -1) { recipe = RECIPES[i]; break; }
-      }
-    }
-    var steps = recipe ? recipe.steps : [
-      // Fallback: aún referencia la tarea concreta, no un molde vacío.
-      { l: "Aclarar en 1 frase qué es 'hecho' para: %s", e: 3 },
-      { l: "Definir el primer movimiento concreto (2 min)", e: 2 },
-      { l: "Ejecutar el núcleo de: %s", e: 15 },
-      { l: "Revisar el resultado", e: 5 },
-      { l: "Cerrar / entregar / guardar", e: 3 }
+  // ---------- Datos ----------
+  var tasks, captures, dopamine, anchors;
+  var loaded = load();
+  if (loaded) {
+    tasks = loaded.tasks; captures = loaded.captures || []; dopamine = loaded.dopamine; anchors = loaded.anchors;
+  } else {
+    tasks = [
+      { id:"t1", title:"Cerrar propuesta cliente Nordvik", status:"planificada", energy:"alta", phase:"pico", day:todayIdx, steps:[
+        { id:"t1s1", label:"Abrir el doc y releer brief", done:true, est:5 },
+        { id:"t1s2", label:"Escribir 3 bullets de alcance", done:false, est:15 },
+        { id:"t1s3", label:"Pegar precios de la plantilla", done:false, est:10 },
+        { id:"t1s4", label:"Enviar a revisión interna", done:false, est:3 }
+      ]},
+      { id:"t2", title:"Contestar correos atrasados", status:"planificada", energy:"media", phase:"meseta", day:todayIdx, steps:[] },
+      { id:"t3", title:"Lavar y guardar la ropa", status:"planificada", energy:"baja", phase:"cierre", day:tmw, routine:true, steps:[
+        { id:"t3s1", label:"Meter carga a la lavadora", done:true },
+        { id:"t3s2", label:"Tender / secadora", done:true },
+        { id:"t3s3", label:"Doblar", done:false }
+      ]},
+      { id:"t4", title:"Tomar agua + estiramiento", status:"hecha", energy:"baja", phase:"arranque", day:todayIdx, routine:true, steps:[] }
     ];
-    return steps.map(function (s) {
-      return { id: id("step"), label: s.l.replace(/%s/g, obj), done: false, est: s.e };
-    });
+    captures = [];
+    // Racha indulgente: streak + mejor marca + escudo (P1)
+    dopamine = { done:3, total:6, streak:12, best:21, shield:true };
+    anchors = [
+      { id:"a1", day:todayIdx, time:"09:30", label:"Dentista", kind:"cita" },
+      { id:"a2", day:todayIdx, time:"16:00", label:"Reunión de equipo", kind:"cita" },
+      { id:"m1", day:todayIdx, time:"08:00", label:"Metilfenidato", kind:"medicacion" },
+      { id:"m2", day:todayIdx, time:"14:00", label:"2ª toma", kind:"medicacion" },
+      { id:"a3", day:tmw, time:"11:00", label:"Llamada cliente Nordvik", kind:"cita" }
+    ];
   }
 
-  // ---------- Utilidades DOM ----------
-  function el(tag, cls, txt) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (txt != null) e.textContent = txt;
-    return e;
-  }
-  function $(sel) { return document.querySelector(sel); }
+  // ---------- Desglose contextual (sin cambios de fondo) ----------
+  var VERBS = ["cerrar","abrir","escribir","redactar","contestar","responder","enviar","llamar","agendar","reunir","lavar","limpiar","ordenar","comprar","pedir","pagar","estudiar","leer","repasar","arreglar","implementar","programar","preparar","hacer","revisar","terminar","organizar","planificar","buscar","actualizar","mandar","entregar"];
+  function objectOf(title){var w=title.trim().split(/\s+/);if(w.length>1){var w0=w[0].toLowerCase();if(VERBS.indexOf(w0)!==-1||(w0.length>3&&/(ar|er|ir)$/.test(w0)))w=w.slice(1);while(w.length>1&&/^(a|el|la|los|las|un|una|de|del|mi|mis|tu)$/i.test(w[0]))w=w.slice(1);}return w.slice(0,6).join(" ")||title.trim();}
+  var RECIPES=[
+    {kw:["correo","correos","email","mail","bandeja","responder","contestar"],steps:[["Abrir la bandeja y filtrar: %s",3],["Marcar los 3 más urgentes",2],["Responder el más urgente (corto)",8],["Contestar el resto en bloque",12],["Archivar y vaciar",3]]},
+    {kw:["propuesta","documento","doc","informe","reporte","memo","presentación","presentacion"],steps:[["Abrir el doc y releer el objetivo de: %s",5],["Esquematizar en 3 bullets",10],["Redactar el cuerpo por secciones",20],["Revisar datos y formato",8],["Enviar / entregar",3]]},
+    {kw:["llamar","llamada","reunión","reunion","cita","contactar","agendar"],steps:[["Anotar en 1 frase el objetivo de: %s",2],["Buscar contacto y horario",3],["Escribir 3 puntos a tratar",5],["Hacer la llamada",15],["Anotar acuerdos",3]]},
+    {kw:["lavar","ropa","limpiar","limpieza","ordenar","cocina","platos","basura","aspirar","casa"],steps:[["Reunir lo necesario para: %s",3],["Empezar por lo más visible",5],["Completar la tarea",15],["Guardar / tender",8],["Dejar despejado",4]]},
+    {kw:["comprar","compra","mercado","super","supermercado","pedir"],steps:[["Listar lo que falta: %s",4],["Revisar qué ya hay",3],["Elegir tienda / app",3],["Hacer la compra",20],["Guardar y tachar",5]]},
+    {kw:["pagar","pago","factura","banco","recibo","impuesto","transferencia"],steps:[["Reunir monto y datos de: %s",3],["Abrir app y verificar saldo",2],["Introducir el pago",4],["Confirmar y guardar comprobante",2],["Anotar en gastos",2]]},
+    {kw:["estudiar","leer","lectura","repasar","aprender","curso","examen","apuntes"],steps:[["Abrir el material: %s",3],["Ojear índice y fijar meta",4],["Estudiar un bloque (25 min)",25],["Resumir en 3 frases",8],["Marcar dónde retomar",2]]},
+    {kw:["escribir","redactar","artículo","articulo","post","blog","texto","guion","guión","ensayo"],steps:[["Definir de qué trata: %s",3],["Volcar ideas en bruto",10],["Ordenar intro·cuerpo·cierre",8],["Redactar borrador",25],["Revisar y pulir",10]]},
+    {kw:["código","codigo","bug","programar","implementar","deploy","test","función","funcion","arreglar"],steps:[["Reproducir / entender: %s",8],["Localizar la causa",10],["Escribir el cambio mínimo",20],["Probar",8],["Commit y push",3]]},
+    {kw:["ejercicio","correr","gimnasio","entrenar","caminar","yoga","estirar","agua","hidrat"],steps:[["Preparar ropa/espacio: %s",3],["Calentar 3 min",3],["Bloque principal",20],["Enfriar / estirar",5],["Registrar",1]]}
+  ];
+  function breakdown(title){var obj=objectOf(title),low=title.toLowerCase(),r=null;for(var i=0;i<RECIPES.length&&!r;i++)for(var j=0;j<RECIPES[i].kw.length;j++)if(low.indexOf(RECIPES[i].kw[j])!==-1){r=RECIPES[i];break;}var steps=r?r.steps:[["Aclarar qué es 'hecho' para: %s",3],["Primer movimiento concreto (2 min)",2],["Ejecutar el núcleo de: %s",15],["Revisar el resultado",5],["Cerrar / guardar",3]];return steps.map(function(s){return{id:id("step"),label:s[0].replace(/%s/g,obj),done:false,est:s[1]};});}
 
-  // ---------- Render: dopamina ----------
-  function renderDopamine() {
-    $("#streakNum").innerHTML = dopamine.streak + '<span>días</span>';
-    $("#routineText").textContent = dopamine.done + "/" + dopamine.total;
-    var box = $("#cells");
-    box.innerHTML = "";
-    for (var i = 0; i < dopamine.total; i++) {
-      box.appendChild(el("div", "cell" + (i < dopamine.done ? " on" : "")));
+  // ---------- DOM utils ----------
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+  function $(s){return document.querySelector(s);}
+
+  // ---------- Racha indulgente (P1) ----------
+  function renderDopamine(){
+    $("#streakNum").innerHTML=dopamine.streak+'<span>días</span>';
+    var meta=$("#streakMeta");meta.innerHTML="";
+    meta.appendChild(el("span","chip-dark best","★ Mejor: "+dopamine.best));
+    meta.appendChild(el("span","chip-dark"+(dopamine.shield?" shield":""),dopamine.shield?"◈ Escudo listo":"◇ Sin escudo"));
+    $("#routineText").textContent=dopamine.done+"/"+dopamine.total;
+    var box=$("#cells");box.innerHTML="";
+    for(var i=0;i<dopamine.total;i++)box.appendChild(el("div","cell"+(i<dopamine.done?" on":"")));
+  }
+
+  // ---------- Medicación (P1) ----------
+  function renderMeds(){
+    var box=$("#medList");box.innerHTML="";
+    var meds=anchors.filter(function(a){return a.kind==="medicacion"&&a.day===todayIdx;}).sort(function(a,b){return a.time<b.time?-1:1;});
+    if(!meds.length){box.appendChild(el("div","rl","— sin tomas hoy"));return;}
+    meds.forEach(function(m){var it=el("div","med-item");it.appendChild(el("span","t",m.time));it.appendChild(el("span","n","💊 "+m.label));box.appendChild(it);});
+  }
+
+  // ---------- Bandeja + triaje por lotes (P2) ----------
+  function renderInbox(){
+    var list=$("#inboxList");list.innerHTML="";
+    $("#inboxMeta").textContent=captures.length+" en bandeja";
+    $("#inboxBlock").style.display=captures.length?"block":"none";
+    var tools=$("#inboxTools");tools.innerHTML="";
+    if(captures.length){
+      tools.appendChild(el("span","lbl","Rápido:"));
+      var all=el("button","e-btn add","Todo a MEDIA →");
+      all.onclick=function(){captures.slice().forEach(function(c){promote(c.id,"media");});};
+      tools.appendChild(all);
     }
-  }
-
-  // ---------- Render: bandeja ----------
-  function renderInbox() {
-    var list = $("#inboxList");
-    list.innerHTML = "";
-    $("#inboxMeta").textContent = captures.length + " en bandeja";
-    $("#inboxBlock").style.display = captures.length ? "block" : "none";
-
-    captures.forEach(function (c) {
-      var li = el("li", "cap-item");
-      li.appendChild(el("span", "txt", c.text));
-
-      var tri = el("div", "triage");
-      tri.appendChild(el("span", "lbl", "energía:"));
-      ["alta", "media", "baja"].forEach(function (e) {
-        var b = el("button", "e-btn " + e, ENERGY[e].label);
-        b.onclick = function () { promote(c.id, e); };
-        tri.appendChild(b);
-      });
-      var x = el("button", "e-btn x-btn", "✕");
-      x.setAttribute("aria-label", "Descartar");
-      x.onclick = function () { captures = captures.filter(function (n) { return n.id !== c.id; }); renderInbox(); };
+    captures.forEach(function(c){
+      var li=el("li","cap-item");
+      li.appendChild(el("span","txt",c.text));
+      var tri=el("div","triage");
+      var add=el("button","e-btn add","Añadir (media)");
+      add.onclick=function(){promote(c.id,"media");};
+      tri.appendChild(add);
+      tri.appendChild(el("span","lbl","o:"));
+      ["alta","baja"].forEach(function(e){var b=el("button","e-btn "+e,ENERGY[e].label);b.onclick=function(){promote(c.id,e);};tri.appendChild(b);});
+      var x=el("button","e-btn x-btn","✕");x.setAttribute("aria-label","Descartar");x.onclick=function(){captures=captures.filter(function(n){return n.id!==c.id;});renderInbox();save();};
       tri.appendChild(x);
-
       li.appendChild(tri);
       list.appendChild(li);
     });
   }
 
-  // ---------- Render: task card ----------
-  function taskCard(task) {
-    var total = task.steps.length;
-    var done = task.steps.filter(function (s) { return s.done; }).length;
-    var isDone = task.status === "hecha";
-
-    var card = el("article", "task" + (isDone ? " done" : ""));
-
-    var top = el("div", "task-top");
-    top.appendChild(el("div", "task-title", task.title));
-    top.appendChild(el("span", "chip " + task.energy, ENERGY[task.energy].label));
-    card.appendChild(top);
-
-    if (task.routine) card.appendChild(el("span", "routine-tag", "Rutina"));
-
-    if (total > 0) {
-      var ul = el("ul", "steps");
-      task.steps.forEach(function (step) {
-        var row = el("label", "step-row" + (step.done ? " done" : ""));
-        var cb = el("input");
-        cb.type = "checkbox";
-        cb.checked = step.done;
-        cb.setAttribute("aria-label", step.label);
-        cb.onchange = function () { toggleStep(task.id, step.id); };
-        row.appendChild(cb);
-        row.appendChild(el("span", "step-label", step.label));
-        if (step.est) row.appendChild(el("span", "step-est", step.est + "m"));
-        ul.appendChild(row);
-      });
-      card.appendChild(ul);
-    } else if (!isDone) {
-      var bd = el("button", "btn-breakdown", "Desglosar en micro-pasos");
-      bd.onclick = function () { doBreakdown(task.id); };
-      card.appendChild(bd);
-    }
-
-    var foot = el("div", "task-foot");
-    foot.appendChild(el("span", "prog", total > 0 ? done + "/" + total + " pasos" : "sin desglosar"));
-    if (!isDone) {
-      var fb = el("button", "btn-focus", "Hiperfoco →");
-      fb.onclick = function () { openFocus(task.id); };
-      foot.appendChild(fb);
-    } else {
-      foot.appendChild(el("span", "foot-done", "✓ Hecha"));
-    }
-    card.appendChild(foot);
-    return card;
-  }
-
-  // ---------- Render: navegador de días ----------
-  function renderDayPills() {
-    var box = $("#dayPills");
-    box.innerHTML = "";
-    DAYS.forEach(function (name, d) {
-      var active = tasks.filter(function (t) {
-        return t.day === d && t.status !== "hecha";
-      }).length;
-      var cls = "day-pill" + (d === todayIdx ? " today" : "") + (d === selectedDay ? " sel" : "");
-      var pill = el("div", cls);
-      pill.setAttribute("role", "tab");
-      pill.setAttribute("aria-selected", d === selectedDay ? "true" : "false");
-      pill.setAttribute("tabindex", "0");
-      pill.appendChild(el("span", "tag", d === todayIdx ? "HOY" : " "));
-      pill.appendChild(el("span", "dnum", name));
-      pill.appendChild(el("span", "cnt", active ? active + " act." : " "));
-      function pick() { selectedDay = d; renderDayPills(); renderAnchors(); renderBlocks(); }
-      pill.onclick = pick;
-      pill.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } };
+  // ---------- Días (P2 rename + P3 contraste) ----------
+  function renderDayPills(){
+    var box=$("#dayPills");box.innerHTML="";
+    DAYS.forEach(function(name,d){
+      var active=tasks.filter(function(t){return t.day===d&&t.status!=="hecha";}).length;
+      var pill=el("div","day-pill"+(d===selectedDay?" sel":""));
+      pill.setAttribute("role","tab");pill.setAttribute("aria-selected",d===selectedDay);pill.setAttribute("tabindex","0");
+      pill.appendChild(el("span","tag"+(d===todayIdx?"":" empty"),d===todayIdx?"HOY":"·"));
+      pill.appendChild(el("span","dnum",name));
+      pill.appendChild(el("span","cnt",active?active+" act.":"·"));
+      function pick(){selectedDay=d;renderDayPills();renderAnchors();renderBlocks();}
+      pill.onclick=pick;pill.onkeydown=function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();pick();}};
       box.appendChild(pill);
     });
   }
 
-  // ---------- Render: anclas (hora fija) del día ----------
-  function renderAnchors() {
-    var box = $("#anchors");
-    box.innerHTML = "";
-    var list = anchors
-      .filter(function (a) { return a.day === selectedDay; })
-      .sort(function (a, b) { return a.time < b.time ? -1 : 1; });
-
-    if (list.length === 0) {
-      box.appendChild(el("div", "anchors-empty", "Sin citas con hora fija este día"));
-      return;
-    }
-    list.forEach(function (a) {
-      var an = el("div", "anchor");
-      an.appendChild(el("span", "pin", "◇ ancla"));
-      an.appendChild(el("span", "time", a.time));
-      an.appendChild(el("span", "lbl", a.label));
+  // ---------- Anclas (citas + medicación) ----------
+  function renderAnchors(){
+    var box=$("#anchors");box.innerHTML="";
+    var list=anchors.filter(function(a){return a.day===selectedDay;}).sort(function(a,b){return a.time<b.time?-1:1;});
+    if(!list.length){box.appendChild(el("div","anchors-empty","Sin citas con hora fija este día"));return;}
+    list.forEach(function(a){
+      var an=el("div","anchor"+(a.kind==="medicacion"?" med":""));
+      an.appendChild(el("span","pin",a.kind==="medicacion"?"💊 medic.":"◇ cita"));
+      an.appendChild(el("span","time",a.time));
+      an.appendChild(el("span","lbl",a.label));
       box.appendChild(an);
     });
   }
 
-  // ---------- Render: bloques por fase ----------
-  function renderBlocks() {
-    var grid = $("#blocksGrid");
-    grid.innerHTML = "";
-    PHASES.forEach(function (ph) {
-      var col = el("div", "phase-col");
-      var head = el("div", "phase-head");
-      head.appendChild(el("h3", null, ph.label));
-      head.appendChild(el("p", null, ph.hint));
+  // ---------- Bloques por fase + fase actual + carga (P1) ----------
+  function renderBlocks(){
+    var grid=$("#blocksGrid");grid.innerHTML="";
+    var nowKey=selectedDay===todayIdx?currentPhaseKey():null;
+    PHASES.forEach(function(ph){
+      var isNow=ph.key===nowKey;
+      var col=el("div","phase-col"+(isNow?" now":""));
+      var head=el("div","phase-head");
+      var row=el("div","row");
+      row.appendChild(el("h3",null,ph.label));
+      if(isNow)row.appendChild(el("span","now-tag","◀ ahora"));
+      head.appendChild(row);
+      head.appendChild(el("p",null,ph.hint));
+      var phaseTasks=tasks.filter(function(t){return t.phase===ph.key&&t.day===selectedDay;});
+      var pend=phaseTasks.filter(function(t){return t.status!=="hecha";});
+      var mins=0;pend.forEach(function(t){t.steps.forEach(function(s){if(!s.done)mins+=(s.est||0);});if(!t.steps.length)mins+=15;});
+      var over=ph.key==="pico"&&mins>120;
+      head.appendChild(el("div","load"+(over?" over":""),pend.length?("≈ "+mins+" min planeados"+(over?" · demasiado":"")):"libre"));
       col.appendChild(head);
-
-      var phaseTasks = tasks.filter(function (t) {
-        return t.phase === ph.key && t.day === selectedDay;
-      });
-      if (phaseTasks.length === 0) {
-        col.appendChild(el("p", "phase-empty", "vacío"));
-      } else {
-        phaseTasks.forEach(function (t) { col.appendChild(taskCard(t)); });
-      }
+      if(!phaseTasks.length)col.appendChild(el("p","phase-empty","vacío"));
+      else phaseTasks.forEach(function(t){col.appendChild(taskCard(t));});
       grid.appendChild(col);
     });
-
-    var active = tasks.filter(function (t) { return t.status !== "hecha"; }).length;
-    $("#activeNum").textContent = active;
+    $("#activeNum").textContent=tasks.filter(function(t){return t.status!=="hecha";}).length;
   }
 
-  function renderAll() { renderInbox(); renderDayPills(); renderAnchors(); renderBlocks(); renderDopamine(); }
+  // ---------- Task card + pasos editables + glifo (P2/P3) ----------
+  function taskCard(task){
+    var total=task.steps.length,done=task.steps.filter(function(s){return s.done;}).length,isDone=task.status==="hecha";
+    var card=el("article","task"+(isDone?" done":""));
+    var top=el("div","task-top");
+    top.appendChild(el("div","task-title",task.title));
+    top.appendChild(el("span","chip "+task.energy,ENERGY[task.energy].label));
+    card.appendChild(top);
+    if(task.routine)card.appendChild(el("span","routine-tag","Rutina"));
+    if(total>0){
+      var ul=el("ul","steps");
+      task.steps.forEach(function(step){
+        var row=el("li","step-row"+(step.done?" done":""));
+        var cb=el("input","cb");cb.type="checkbox";cb.checked=step.done;cb.id="cb_"+step.id;cb.setAttribute("aria-label",step.label);
+        cb.onchange=function(){toggleStep(task.id,step.id);};
+        var lab=el("label","step-label",step.label);lab.setAttribute("for","cb_"+step.id);
+        row.appendChild(cb);row.appendChild(lab);
+        if(step.est)row.appendChild(el("span","step-est",step.est+"m"));
+        var del=el("button","step-del","✕");del.setAttribute("aria-label","Borrar paso");del.onclick=function(){delStep(task.id,step.id);};
+        row.appendChild(del);
+        ul.appendChild(row);
+      });
+      card.appendChild(ul);
+      var addRow=el("div","step-add");
+      var inp=el("input");inp.type="text";inp.placeholder="Añadir un paso…";inp.setAttribute("aria-label","Nuevo paso");
+      var addBtn=el("button",null,"+");
+      function addNow(){var v=inp.value.trim();if(!v)return;addStep(task.id,v);inp.value="";}
+      addBtn.onclick=addNow;inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();addNow();}};
+      addRow.appendChild(inp);addRow.appendChild(addBtn);
+      card.appendChild(addRow);
+      var redo=el("button","redo","↻ Rehacer el desglose");redo.onclick=function(){doBreakdown(task.id);};
+      card.appendChild(redo);
+    } else if(!isDone){
+      var bd=el("button","btn-breakdown","Partir en pasos");bd.onclick=function(){doBreakdown(task.id);};
+      card.appendChild(bd);
+    }
+    var foot=el("div","task-foot");
+    foot.appendChild(el("span","prog",total>0?done+"/"+total+" pasos":"sin partir"));
+    if(!isDone){var fb=el("button","btn-focus","Hiperfoco →");fb.onclick=function(){openFocus(task.id);};foot.appendChild(fb);}
+    else foot.appendChild(el("span","foot-done","✓ Hecha"));
+    card.appendChild(foot);
+    return card;
+  }
+
+  function renderAll(){renderInbox();renderDayPills();renderAnchors();renderBlocks();renderDopamine();renderMeds();save();}
 
   // ---------- Acciones ----------
-  function capture(text) {
-    captures.unshift({ id: id("cap"), text: text });
-    renderInbox();
+  function capture(text){captures.unshift({id:id("cap"),text:text});renderInbox();save();}
+  function promote(capId,energy){
+    var node=captures.filter(function(c){return c.id===capId;})[0];if(!node)return;
+    tasks.unshift({id:id("task"),title:node.text,status:"planificada",energy:energy,phase:ENERGY[energy].phase,day:selectedDay,steps:[]});
+    captures=captures.filter(function(c){return c.id!==capId;});renderAll();
   }
-
-  function promote(capId, energy) {
-    var node = captures.filter(function (c) { return c.id === capId; })[0];
-    if (!node) return;
-    tasks.unshift({
-      id: id("task"), title: node.text, status: "planificada",
-      energy: energy, phase: ENERGY[energy].phase, day: selectedDay, steps: []
-    });
-    captures = captures.filter(function (c) { return c.id !== capId; });
+  function doBreakdown(taskId){tasks.forEach(function(t){if(t.id===taskId)t.steps=breakdown(t.title);});renderBlocks();save();}
+  function addStep(taskId,label){tasks.forEach(function(t){if(t.id===taskId)t.steps.push({id:id("step"),label:label,done:false});});recompute(taskId);}
+  function delStep(taskId,stepId){tasks.forEach(function(t){if(t.id===taskId)t.steps=t.steps.filter(function(s){return s.id!==stepId;});});recompute(taskId);}
+  function recompute(taskId){
+    var t=tasks.filter(function(x){return x.id===taskId;})[0];if(!t)return;
+    var allDone=t.steps.length>0&&t.steps.every(function(s){return s.done;});
+    t.status=allDone?"hecha":(t.steps.some(function(s){return s.done;})?"en-curso":"planificada");
+    renderBlocks();save();
+  }
+  function toggleStep(taskId,stepId){
+    var task=tasks.filter(function(t){return t.id===taskId;})[0];if(!task)return;
+    var wasDone=task.status==="hecha";
+    task.steps.forEach(function(s){if(s.id===stepId)s.done=!s.done;});
+    var allDone=task.steps.length>0&&task.steps.every(function(s){return s.done;});
+    task.status=allDone?"hecha":"en-curso";
+    // Dopamina: solo en la transición a hecha de una rutina (fix doble conteo, P3)
+    if(task.routine&&allDone&&!wasDone&&dopamine.done<dopamine.total)dopamine.done+=1;
     renderAll();
   }
 
-  function doBreakdown(taskId) {
-    tasks.forEach(function (t) { if (t.id === taskId) t.steps = breakdown(t.title); });
-    renderBlocks();
-  }
-
-  function toggleStep(taskId, stepId) {
-    var task = tasks.filter(function (t) { return t.id === taskId; })[0];
-    if (!task) return;
-    var wasDone = task.status === "hecha";
-    task.steps.forEach(function (s) { if (s.id === stepId) s.done = !s.done; });
-    var allDone = task.steps.length > 0 && task.steps.every(function (s) { return s.done; });
-    task.status = allDone ? "hecha" : "en-curso";
-
-    // Dopamina operativa: al cerrar una rutina, sube el contador del día.
-    if (task.routine && allDone && !wasDone && dopamine.done < dopamine.total) {
-      dopamine.done += 1;
-    }
-    renderAll();
-  }
-
-  // ---------- Hiperfoco ----------
-  var NUDGES = [
-    { at: 5,  text: "Pausa fisiológica · Mira lejos 20 segundos. Descansa la vista." },
-    { at: 12, text: "Pausa fisiológica · Toma agua." },
-    { at: 20, text: "Pausa fisiológica · Recoloca la espalda. Hombros abajo." },
-    { at: 30, text: "Pausa fisiológica · 3 respiraciones lentas." }
+  // ---------- Hiperfoco con contención (P0) ----------
+  var DURATION=50*60, BREAK=120;
+  // Primer aviso ≥25 min; vitales (comida/medic.) marcados
+  var NUDGES=[
+    {at:25,text:"Bebe agua. Mira lejos 20 segundos.",vital:false},
+    {at:40,text:"Postura: hombros abajo, espalda recta.",vital:false},
+    {at:45,text:"¿Comiste? ¿Toca medicación? Revísalo.",vital:true}
   ];
-  var DURATION = 50 * 60;
-  var focus = { taskId: null, elapsed: 0, running: false, timer: null, fired: {} };
+  var focus={taskId:null,elapsed:0,running:false,timer:null,fired:{},muted:false,sessions:0};
+  function fmt(s){var m=Math.floor(s/60),x=s%60;return(m<10?"0":"")+m+":"+(x<10?"0":"")+x;}
 
-  function fmt(sec) {
-    var m = Math.floor(sec / 60), s = sec % 60;
-    return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
-  }
-
-  function openFocus(taskId) {
-    var task = tasks.filter(function (t) { return t.id === taskId; })[0];
-    if (!task) return;
-    focus = { taskId: taskId, elapsed: 0, running: true, timer: null, fired: {} };
-
-    $("#ofTitle").textContent = task.title;
-    var next = task.steps.filter(function (s) { return !s.done; })[0];
-    var stepEl = $("#ofStep");
-    if (next) { stepEl.textContent = "→ " + next.label; stepEl.style.display = "block"; }
-    else { stepEl.style.display = "none"; }
-
-    $("#nudge").classList.remove("show");
-    $("#ofClock").classList.remove("done");
-    $("#ofClock").textContent = fmt(DURATION);
-    $("#ofPause").textContent = "Pausa";
-    $("#ofPause").style.display = "inline-block";
-    $("#overlay").classList.add("open");
-    tick();
+  function openFocus(taskId){
+    var task=tasks.filter(function(t){return t.id===taskId;})[0];if(!task)return;
+    focus.taskId=taskId;focus.elapsed=0;focus.running=true;focus.fired={};focus.muted=false;
+    focus.sessions=(focus.sessions||0)+1;
+    $("#ofSessions").textContent=focus.sessions>=3?("⚠ "+focus.sessions+"ª sesión seguida — considera parar por hoy"):(focus.sessions>1?(focus.sessions+"ª sesión seguida"):"");
+    $("#ofTitle").textContent=task.title;
+    var next=task.steps.filter(function(s){return !s.done;})[0];
+    var se=$("#ofStep");if(next){se.textContent="→ "+next.label;se.style.display="block";}else se.style.display="none";
+    $("#nudge").className="nudge";$("#breakScreen").className="breakscreen";
+    $("#ofClock").className="clock";$("#ofClock").textContent=fmt(DURATION);
+    $("#ofPause").textContent="Pausa";$("#ofPause").style.display="inline-block";
+    $("#ofMute").textContent="Silenciar avisos";
+    var ov=$("#overlay");ov.classList.add("open");
+    lastFocused=document.activeElement;$("#ofEnd").focus();
     startTimer();
   }
-
-  function startTimer() {
-    stopTimer();
-    focus.timer = setInterval(function () {
-      if (!focus.running) return;
-      focus.elapsed = Math.min(focus.elapsed + 1, DURATION);
-      tick();
-      if (focus.elapsed >= DURATION) stopTimer();
-    }, 1000);
+  function startTimer(){stopTimer();focus.timer=setInterval(function(){if(!focus.running)return;focus.elapsed=Math.min(focus.elapsed+1,DURATION);tick();if(focus.elapsed>=DURATION){stopTimer();forceBreak();}},1000);}
+  function stopTimer(){if(focus.timer){clearInterval(focus.timer);focus.timer=null;}}
+  function tick(){
+    var rem=DURATION-focus.elapsed,clock=$("#ofClock");
+    if(rem<=0){clock.textContent="LISTO";clock.classList.add("done");}else clock.textContent=fmt(rem);
+    if(focus.muted)return;
+    var min=Math.floor(focus.elapsed/60);
+    NUDGES.forEach(function(n){if(n.at===min&&!focus.fired[n.at]){focus.fired[n.at]=true;$("#nudgeText").textContent=(n.vital?"Cuídate · ":"Pausa suave · ")+n.text;$("#nudge").className="nudge show"+(n.vital?" vital":"");}});
   }
-  function stopTimer() { if (focus.timer) { clearInterval(focus.timer); focus.timer = null; } }
-
-  function tick() {
-    var remaining = DURATION - focus.elapsed;
-    var clock = $("#ofClock");
-    if (remaining <= 0) { clock.textContent = "LISTO"; clock.classList.add("done"); $("#ofPause").style.display = "none"; }
-    else { clock.textContent = fmt(remaining); }
-
-    var min = Math.floor(focus.elapsed / 60);
-    NUDGES.forEach(function (n) {
-      if (n.at === min && !focus.fired[n.at]) {
-        focus.fired[n.at] = true;
-        $("#nudgeText").textContent = n.text;
-        $("#nudge").classList.add("show");
-      }
-    });
+  // Pausa obligatoria al cerrar la sesión (P0)
+  var breakTimer=null;
+  function forceBreak(){
+    var left=BREAK;$("#breakCd").textContent=fmt(left);
+    var bd=$("#breakDone");bd.disabled=true;bd.textContent="Espera…";
+    $("#breakScreen").className="breakscreen show";
+    if(breakTimer)clearInterval(breakTimer);
+    breakTimer=setInterval(function(){left--;$("#breakCd").textContent=fmt(Math.max(left,0));if(left<=0){clearInterval(breakTimer);bd.disabled=false;bd.textContent="Listo, descansé";}},1000);
   }
 
-  function closeFocus() {
-    stopTimer();
-    $("#overlay").classList.remove("open");
-    focus.taskId = null;
+  var lastFocused=null;
+  function closeFocus(){stopTimer();if(breakTimer)clearInterval(breakTimer);$("#overlay").classList.remove("open");focus.taskId=null;if(lastFocused&&lastFocused.focus)lastFocused.focus();}
+
+  // Focus trap (P3)
+  function trap(e){
+    if(!$("#overlay").classList.contains("open"))return;
+    if(e.key==="Escape"){closeFocus();return;}
+    if(e.key!=="Tab")return;
+    var f=$("#overlay").querySelectorAll("button:not([disabled])");
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
   }
+
+  // ---------- Onboarding (P2) ----------
+  var ONB=[
+    {t:"Suéltalo, sin pensar",b:"Escribe lo que tengas en la cabeza y pulsa Guardar. No elijas nada todavía: solo vaciar la cabeza."},
+    {t:"Por energía, no por horas",b:"Cada cosa vive en un momento del día (Para empezar / A tope / Ritmo suave / Cerrar) según cuánta cabeza pide. Sin horarios que cumplir."},
+    {t:"Hiperfoco con cuidado",b:"Aíslate con un temporizador. Te avisará de beber agua y de tu medicación, y te obligará a una pausa al terminar."}
+  ];
+  var onbI=0;
+  function renderOnb(){
+    $("#onbStepN").textContent="Paso "+(onbI+1)+" de "+ONB.length;
+    $("#onbTitle").textContent=ONB[onbI].t;$("#onbBody").textContent=ONB[onbI].b;
+    var dots=$("#onbDots");dots.innerHTML="";ONB.forEach(function(_,i){dots.appendChild(el("i",i===onbI?"on":""));});
+    $("#onbNext").textContent=onbI===ONB.length-1?"Empezar":"Siguiente";
+  }
+  function closeOnb(){$("#onb").classList.remove("open");try{LS.setItem("nf_onb","1");}catch(e){}}
 
   // ---------- Wiring ----------
-  $("#dumpForm").addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    var v = $("#dumpInput").value.trim();
-    if (!v) return;
-    capture(v);
-    $("#dumpInput").value = "";
-    $("#dumpInput").focus();
-  });
+  $("#dumpForm").addEventListener("submit",function(e){e.preventDefault();var v=$("#dumpInput").value.trim();if(!v)return;capture(v);$("#dumpInput").value="";$("#dumpInput").focus();});
+  $("#ofPause").addEventListener("click",function(){focus.running=!focus.running;this.textContent=focus.running?"Pausa":"Sigue";});
+  $("#ofEnd").addEventListener("click",closeFocus);
+  $("#ofExit").addEventListener("click",closeFocus);
+  $("#ofMute").addEventListener("click",function(){focus.muted=!focus.muted;this.textContent=focus.muted?"Avisos silenciados":"Silenciar avisos";if(focus.muted)$("#nudge").className="nudge";});
+  $("#nudgeAck").addEventListener("click",function(){$("#nudge").className="nudge";});
+  $("#breakDone").addEventListener("click",closeFocus);
+  document.addEventListener("keydown",trap);
 
-  $("#ofPause").addEventListener("click", function () {
-    focus.running = !focus.running;
-    this.textContent = focus.running ? "Pausa" : "Sigue";
-  });
-  $("#ofEnd").addEventListener("click", closeFocus);
-  $("#ofExit").addEventListener("click", closeFocus);
-  $("#nudgeAck").addEventListener("click", function () { $("#nudge").classList.remove("show"); });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && $("#overlay").classList.contains("open")) closeFocus();
-  });
+  $("#discOk").addEventListener("click",function(){$("#disclaimer").style.display="none";try{LS.setItem("nf_disc","1");}catch(e){}});
+  if(LS.getItem("nf_disc"))$("#disclaimer").style.display="none";
+
+  $("#onbNext").addEventListener("click",function(){if(onbI<ONB.length-1){onbI++;renderOnb();}else closeOnb();});
+  $("#onbSkip").addEventListener("click",closeOnb);
 
   renderAll();
+  if(!LS.getItem("nf_onb")){renderOnb();$("#onb").classList.add("open");}
 })();
 </script>
 </body>

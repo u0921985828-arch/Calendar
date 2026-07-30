@@ -169,21 +169,24 @@ export function breakdownHeuristic(title: string): MicroStep[] {
 }
 
 /**
- * Punto de enganche para el desglose real con Claude.
- *
- * Implementacion sugerida (server action / route handler):
- *   const res = await anthropic.messages.create({
- *     model: "claude-sonnet-5",
- *     max_tokens: 512,
- *     system: "Descompon la tarea en 3-5 micro-pasos ejecutables y pequenos. " +
- *             "Cada paso empieza por un verbo. Devuelve JSON: {steps:[{label,estimateMin}]}.",
- *     messages: [{ role: "user", content: title }],
- *   });
- * Parsear la respuesta a MicroStep[]. Ante error de red -> breakdownHeuristic.
+ * Desglose real con Claude, SIEMPRE via el route handler del servidor
+ * (`app/api/breakdown`), nunca llamando a la API desde el cliente: la key
+ * vive en el servidor. Ante cualquier fallo, cae a la heuristica local.
  */
 export async function breakdownWithLLM(title: string): Promise<MicroStep[]> {
-  // TODO: conectar a la API de Claude. Por ahora, fallback deterministico.
-  return breakdownHeuristic(title);
+  if (typeof window === "undefined") return breakdownHeuristic(title);
+  try {
+    const res = await fetch("/api/breakdown", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    if (!res.ok) return breakdownHeuristic(title);
+    const data = (await res.json()) as { steps?: MicroStep[] };
+    return data.steps && data.steps.length ? data.steps : breakdownHeuristic(title);
+  } catch {
+    return breakdownHeuristic(title);
+  }
 }
 
 /** Entrada por defecto usada por la UI base (sincrona, offline). */

@@ -1,28 +1,60 @@
-import type { DopamineMetric } from "@/lib/types";
+import type { Anchor, DopamineMetric, WeekDay } from "@/lib/types";
 
 /**
- * DOPAMINA OPERATIVA — hitos visuales inmediatos.
- * Progreso de rutina del dia como bloques macizos que se rellenan, mas racha.
- * El refuerzo es visual e instantaneo, no textual.
+ * DOPAMINA OPERATIVA — hitos visuales inmediatos, con racha INDULGENTE.
+ * Muestra mejor marca y escudo para no castigar con vergueenza al romperse
+ * (RSD). Debajo, la medicacion de hoy como recordatorio dedicado.
  */
-export function DopamineBar({ metric }: { metric: DopamineMetric }) {
-  const { routineDoneToday, routineTotalToday, streakDays } = metric;
+export function DopamineBar({
+  metric,
+  anchors,
+  today,
+}: {
+  metric: DopamineMetric;
+  anchors: Anchor[];
+  today: WeekDay | null;
+}) {
+  const { routineDoneToday, routineTotalToday, streakDays, bestStreak, shieldAvailable } =
+    metric;
   const cells = Array.from({ length: routineTotalToday });
+  const meds =
+    today === null
+      ? []
+      : anchors
+          .filter((a) => a.kind === "medicacion" && a.day === today)
+          .sort((a, b) => (a.time < b.time ? -1 : 1));
 
   return (
     <section className="block-hard bg-ink p-5 text-paper">
-      <div className="flex items-center justify-between border-b border-paper/30 pb-2">
+      <div className="flex items-center justify-between gap-2 border-b border-paper/30 pb-2">
         <h2 className="text-display font-black uppercase tracking-tight">Racha</h2>
-        <span className="font-mono text-mega leading-none text-action">
+        <span className="font-mono text-mega leading-none text-action tabular-nums">
           {streakDays}
-          <span className="ml-1 align-top text-base text-paper/60">dias</span>
+          <span className="ml-1 align-top text-sm text-paper/60">días</span>
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className="border border-action px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-action">
+          ★ Mejor: {bestStreak}
+        </span>
+        <span
+          className={`border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+            shieldAvailable ? "border-focus text-focus" : "border-paper/40 text-paper/60"
+          }`}
+        >
+          {shieldAvailable ? "◈ Escudo listo" : "◇ Sin escudo"}
         </span>
       </div>
 
       <p className="mt-4 font-mono text-xs uppercase tracking-wider text-paper/60">
         Rutina de hoy · {routineDoneToday}/{routineTotalToday}
       </p>
-      <div className="mt-2 flex gap-1.5" role="img" aria-label={`${routineDoneToday} de ${routineTotalToday} rutinas completadas`}>
+      <div
+        className="mt-2 flex gap-1.5"
+        role="img"
+        aria-label={`${routineDoneToday} de ${routineTotalToday} rutinas completadas`}
+      >
         {cells.map((_, i) => (
           <div
             key={i}
@@ -31,6 +63,29 @@ export function DopamineBar({ metric }: { metric: DopamineMetric }) {
             }`}
           />
         ))}
+      </div>
+
+      <div className="mt-4 border-t border-paper/30 pt-3">
+        <div className="font-mono text-xs uppercase tracking-wider text-paper/60">
+          Medicación de hoy
+        </div>
+        {meds.length === 0 ? (
+          <div className="mt-2 font-mono text-xs text-paper/40">— sin tomas hoy</div>
+        ) : (
+          <ul className="mt-2 flex flex-col gap-2">
+            {meds.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-center gap-2 border border-focus px-2 py-1.5"
+              >
+                <span className="font-mono text-sm font-bold tabular-nums text-focus">
+                  {m.time}
+                </span>
+                <span className="text-sm font-bold">💊 {m.label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );

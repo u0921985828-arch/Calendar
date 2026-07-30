@@ -10,9 +10,13 @@ import type {
   WeekDay,
 } from "@/lib/types";
 import { SEED_TASKS, SEED_DOPAMINE, SEED_ANCHORS, SEED_TODAY } from "@/lib/seed";
-import { todayWeekDay } from "@/lib/design-tokens";
-import { breakdownTask } from "@/lib/breakdown";
+import { todayWeekDay, currentPhase } from "@/lib/design-tokens";
+import { breakdownWithLLM } from "@/lib/breakdown";
 import { makeId } from "@/lib/id";
+import { loadState, saveState } from "@/lib/persist";
+import { statusFromSteps } from "@/lib/status";
+import { Disclaimer } from "./Disclaimer";
+import { Onboarding } from "./Onboarding";
 import { BrainDump } from "./BrainDump";
 import { CaptureInbox } from "./CaptureInbox";
 import { TimeBlocks } from "./TimeBlocks";
@@ -28,24 +32,44 @@ const PHASE_BY_ENERGY: Record<EnergyLevel, Task["phase"]> = {
 
 /**
  * DASHBOARD — orquestador principal.
- * Mantiene el estado en memoria (capturas, tareas, dopamina, sesion de foco).
- * En produccion, este estado se sincroniza con un store/servidor; los
- * componentes hijos permanecen puros y controlados por props.
+ * Estado controlado por props hacia los hijos (puros). Se PERSISTE en local
+ * (ver lib/persist) para no perder nada al recargar. Aviso clinico y
+ * onboarding se montan aqui.
  */
 export default function Dashboard() {
   const [captures, setCaptures] = useState<CaptureNode[]>([]);
   const [tasks, setTasks] = useState<Task[]>(SEED_TASKS);
-  const [anchors] = useState<Anchor[]>(SEED_ANCHORS);
+  const [anchors, setAnchors] = useState<Anchor[]>(SEED_ANCHORS);
   const [dopamine, setDopamine] = useState<DopamineMetric>(SEED_DOPAMINE);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
+  const [sessionCount, setSessionCount] = useState(0);
 
   // La semana arranca en el dia de referencia del seed; al montar en cliente
   // se marca el HOY real (evita desajuste de hidratacion en SSR).
   const [selectedDay, setSelectedDay] = useState<WeekDay>(SEED_TODAY as WeekDay);
   const [today, setToday] = useState<WeekDay | null>(null);
+  const [phaseNow, setPhaseNow] = useState<Task["phase"] | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Carga inicial: hoy real + estado persistido.
   useEffect(() => {
     setToday(todayWeekDay());
+    setPhaseNow(currentPhase());
+    const saved = loadState();
+    if (saved) {
+      setTasks(saved.tasks);
+      setCaptures(saved.captures);
+      setDopamine(saved.dopamine);
+      setAnchors(saved.anchors);
+    }
+    setHydrated(true);
   }, []);
+
+  // Persistencia: guarda tras cada cambio, una vez hidratado.
+  useEffect(() => {
+    if (!hydrated) return;
+    saveState({ tasks, captures, dopamine, anchors });
+  }, [hydrated, tasks, captures, dopamine, anchors]);
 
   const focusTask = useMemo(
     () => tasks.find((t) => t.id === focusTaskId) ?? null,
@@ -62,35 +86,57 @@ export default function Dashboard() {
 
   // --- Triaje: captura -> tarea ------------------------------------------
   function promoteCapture(id: string, energy: EnergyLevel) {
-    const node = captures.find((c) => c.id === id);
-    if (!node) return;
-    const task: Task = {
-      id: makeId("task"),
-      title: node.text,
-      status: "planificada",
-      energy,
-      phase: PHASE_BY_ENERGY[energy],
-      day: selectedDay,
-      steps: [],
-    };
-    setTasks((prev) => [task, ...prev]);
-    setCaptures((prev) => prev.filter((c) => c.id !== id));
+    setCaptures((prevCaps) => {
+      const node = prevCaps.find((c) => c.id === id);
+      if (node) {
+        const task: Task = {
+          id: makeId("task"),
+          title: node.text,
+          status: "planificada",
+          energy,
+          phase: PHASE_BY_ENERGY[energy],
+          day: selectedDay,
+          steps: [],
+        };
+        setTasks((prev) => [task, ...prev]);
+      }
+      return prevCaps.filter((c) => c.id !== id);
+    });
   }
 
   function dismissCapture(id: string) {
     setCaptures((prev) => prev.filter((c) => c.id !== id));
   }
 
-  // --- Desglose algoritmico ----------------------------------------------
-  function breakdown(taskId: string) {
+  // --- Desglose (via servidor -> Claude, fallback heuristico) -------------
+  async function breakdown(taskId: string) {
+    const target = tasks.find((t) => t.id === taskId);
+    if (!target) return;
+    const steps = await breakdownWithLLM(target.title);
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, steps } : t)));
+  }
+
+  function addStep(taskId: string, label: string) {
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, steps: breakdownTask(t.title) } : t,
-      ),
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const steps = [...t.steps, { id: makeId("step"), label, done: false }];
+        return { ...t, steps, status: statusFromSteps(steps) };
+      }),
     );
   }
 
-  // --- Micro-pasos + auto-completado de tarea ----------------------------
+  function deleteStep(taskId: string, stepId: string) {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const steps = t.steps.filter((s) => s.id !== stepId);
+        return { ...t, steps, status: statusFromSteps(steps) };
+      }),
+    );
+  }
+
+  // --- Micro-pasos + auto-completado -------------------------------------
   function toggleStep(taskId: string, stepId: string) {
     const target = tasks.find((t) => t.id === taskId);
     if (!target) return;
@@ -99,16 +145,15 @@ export default function Dashboard() {
       s.id === stepId ? { ...s, done: !s.done } : s,
     );
     const allDone = steps.length > 0 && steps.every((s) => s.done);
-    const nextStatus: Task["status"] = allDone ? "hecha" : "en-curso";
 
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, steps, status: nextStatus } : t)),
+      prev.map((t) =>
+        t.id === taskId ? { ...t, steps, status: statusFromSteps(steps) } : t,
+      ),
     );
 
-    // Dopamina operativa: al CERRAR una rutina (transicion a hecha), premia.
-    const justClosedRoutine =
-      target.isRoutine && allDone && target.status !== "hecha";
-    if (justClosedRoutine) {
+    // Dopamina: solo en la transicion a hecha de una rutina (evita doble conteo).
+    if (target.isRoutine && allDone && target.status !== "hecha") {
       setDopamine((d) => ({
         ...d,
         routineDoneToday: Math.min(d.routineDoneToday + 1, d.routineTotalToday),
@@ -116,55 +161,66 @@ export default function Dashboard() {
     }
   }
 
-  const pendingCount = captures.length;
+  function openFocus(taskId: string) {
+    setSessionCount((n) => n + 1);
+    setFocusTaskId(taskId);
+  }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      {/* Cabecera de autoridad: titulo masivo, sin adornos. */}
-      <header className="mb-8 flex flex-col gap-2 border-b-3 border-ink pb-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-mega font-black uppercase tracking-tighter">
-            Neuroflow
-          </h1>
-          <p className="mt-1 font-mono text-xs uppercase tracking-[0.25em] text-ink/60">
-            Gestion estocastica del tiempo · TDAH + AACC
+    <>
+      <Disclaimer />
+      <Onboarding />
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+        <header className="mb-8 flex flex-col gap-2 border-b-3 border-ink pb-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-mega font-black uppercase tracking-tighter">Neuroflow</h1>
+            <p className="mt-1 font-mono text-xs uppercase tracking-[0.2em] text-ink/60">
+              Organiza tu día por energía, no por horas
+            </p>
+          </div>
+          <p className="font-mono text-xs uppercase text-ink/60">
+            {tasks.filter((t) => t.status !== "hecha").length} cosas por hacer
           </p>
-        </div>
-        <p className="font-mono text-xs uppercase text-ink/60">
-          {tasks.filter((t) => t.status !== "hecha").length} tareas activas
-        </p>
-      </header>
+        </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <BrainDump onCapture={handleCapture} count={pendingCount} />
-          <CaptureInbox
-            captures={captures}
-            onPromote={promoteCapture}
-            onDismiss={dismissCapture}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="flex flex-col gap-6 lg:col-span-2">
+            <BrainDump onCapture={handleCapture} count={captures.length} />
+            <CaptureInbox
+              captures={captures}
+              onPromote={promoteCapture}
+              onDismiss={dismissCapture}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <DopamineBar metric={dopamine} anchors={anchors} today={today} />
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <TimeBlocks
+            tasks={tasks}
+            anchors={anchors}
+            today={today}
+            selectedDay={selectedDay}
+            onSelectDay={setSelectedDay}
+            onToggleStep={toggleStep}
+            onBreakdown={breakdown}
+            onFocus={openFocus}
+            onAddStep={addStep}
+            onDeleteStep={deleteStep}
+            currentPhaseKey={selectedDay === today ? phaseNow : null}
           />
         </div>
-        <div className="lg:col-span-1">
-          <DopamineBar metric={dopamine} />
-        </div>
-      </div>
 
-      <div className="mt-6">
-        <TimeBlocks
-          tasks={tasks}
-          anchors={anchors}
-          today={today}
-          selectedDay={selectedDay}
-          onSelectDay={setSelectedDay}
-          onToggleStep={toggleStep}
-          onBreakdown={breakdown}
-          onFocus={setFocusTaskId}
-        />
-      </div>
-
-      {focusTask ? (
-        <HyperfocusPanel task={focusTask} onClose={() => setFocusTaskId(null)} />
-      ) : null}
-    </main>
+        {focusTask ? (
+          <HyperfocusPanel
+            task={focusTask}
+            sessionNumber={sessionCount}
+            onClose={() => setFocusTaskId(null)}
+          />
+        ) : null}
+      </main>
+    </>
   );
 }

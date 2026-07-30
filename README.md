@@ -57,27 +57,46 @@ app/
   layout.tsx          Root layout (lang=es, metadata)
   page.tsx            Monta <Dashboard/>
   globals.css         Base Tailwind + utilidades C40 (.block-hard, .btn-action)
+  api/breakdown/route.ts  Desglose LLM del lado servidor (key en env, rate-limit,
+                          validación de salida, fallback heurístico)
 components/
   dashboard/
-    Dashboard.tsx     Orquestador con estado (capturas, tareas, dopamina, foco)
+    Dashboard.tsx     Orquestador con estado + persistencia local
+    Disclaimer.tsx    Aviso clínico "no es dispositivo médico" (persistente)
+    Onboarding.tsx    Bienvenida de 3 pasos (primera visita)
     BrainDump.tsx     Captura de fricción cero
-    CaptureInbox.tsx  Triaje captura → tarea (asigna energía)
-    TimeBlocks.tsx    Vista Semana: navegador de días + anclas + fases
-    WeekNav.tsx       Pills de día (Lun–Dom), marca HOY y activas por día
-    AnchorStrip.tsx   Franja de citas con hora fija del día seleccionado
-    TaskCard.tsx      Tarea + desglose molecular + botón hiperfoco
-    HyperfocusPanel.tsx  Overlay de aislamiento + timer + nudges
-    DopamineBar.tsx   Racha e hitos de rutina
+    CaptureInbox.tsx  Triaje sin parálisis (default MEDIA + por lotes)
+    TimeBlocks.tsx    Vista Semana: días + anclas + fases + "◀ ahora" + carga
+    WeekNav.tsx       Pills de día (Lun–Dom), HOY con contraste AA
+    AnchorStrip.tsx   Citas y medicación con hora fija
+    TaskCard.tsx      Tarea + pasos editables (✓ glifo, añadir/borrar/rehacer)
+    HyperfocusPanel.tsx  Aislamiento + timer + nudges tardíos + pausa obligatoria
+    DopamineBar.tsx   Racha indulgente (mejor marca + escudo) + medicación
   ui/
     EnergyChip.tsx    Señalética de energía
     SectionHeader.tsx Encabezado de bloque (índice + título masivo)
 lib/
   types.ts            Modelo de dominio
-  design-tokens.ts    Mapas señalética energía/fase
-  breakdown.ts        Desglose algorítmico (stub → LLM)
+  design-tokens.ts    Señalética energía/fase + fase actual
+  breakdown.ts        Desglose contextual + breakdownWithLLM (→ /api/breakdown)
+  breakdown.test.ts   Tests del desglose (vitest)
+  status.ts / .test.ts  Estado derivado de pasos + tests
+  persist.ts          Persistencia local (con nota de cifrado para prod)
   seed.ts             Datos de demo
-  id.ts               IDs de cliente
+  id.ts               IDs de cliente (crypto)
+docs/
+  AUDITORIA.md        Auditoría maestra (5 lentes) + roadmap
 ```
+
+## Auditoría aplicada
+
+El repo incorpora los hallazgos de `docs/AUDITORIA.md` (P0–P3): disclaimer
+clínico, persistencia, LLM del lado servidor, contención del hiperfoco (nudges
+≥ 25 min, pausa obligatoria, avisos de comida/medicación), racha indulgente,
+recordatorio de medicación, marcador de fase actual, lenguaje llano +
+onboarding, triaje sin parálisis, accesibilidad (focus trap, contraste AA,
+glifo en checks) y tests. Config: `ANTHROPIC_API_KEY` en el entorno activa el
+desglose con Claude; sin ella, usa la heurística local.
 
 ---
 

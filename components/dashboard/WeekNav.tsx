@@ -48,7 +48,11 @@ export function WeekNav({
                 : undefined
             }
           >
-            <span className="text-[8px] tracking-widest text-action">
+            <span
+              className={`px-1 text-[8px] font-black tracking-wide ${
+                isToday ? "bg-action text-ink" : "text-transparent"
+              }`}
+            >
               {isToday ? "HOY" : " "}
             </span>
             <span className="text-[15px]">{name}</span>

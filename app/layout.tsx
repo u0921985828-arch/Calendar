@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NEUROFLOW / Gestion estocastica del tiempo",
+  title: "NEUROFLOW / Organiza tu dia por energia, no por horas",
   description:
-    "Sistema de gestion de tiempo para cerebros TDAH + AACC. Captura sin friccion, bloques por energia, hiperfoco y dopamina operativa.",
+    "Sistema de gestion de tiempo para cerebros TDAH + AACC. Captura sin friccion, bloques por energia, hiperfoco y dopamina operativa. No es un dispositivo medico.",
 };
 
 export const viewport: Viewport = {

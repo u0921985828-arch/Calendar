@@ -26,18 +26,23 @@ export function AnchorStrip({
 
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      {list.map((a) => (
-        <div
-          key={a.id}
-          className="inline-flex items-center gap-2 border border-ink border-l-3 border-l-focus bg-paper px-2.5 py-1.5"
-        >
-          <span className="font-mono text-[9px] uppercase tracking-widest text-ink/45">
-            ◇ ancla
-          </span>
-          <span className="font-mono text-sm font-bold tabular-nums">{a.time}</span>
-          <span className="text-sm font-bold">{a.label}</span>
-        </div>
-      ))}
+      {list.map((a) => {
+        const isMed = a.kind === "medicacion";
+        return (
+          <div
+            key={a.id}
+            className={`inline-flex items-center gap-2 border border-ink border-l-3 bg-paper px-2.5 py-1.5 ${
+              isMed ? "border-l-alert" : "border-l-focus"
+            }`}
+          >
+            <span className="font-mono text-[9px] uppercase tracking-widest text-ink/45">
+              {isMed ? "💊 medic." : "◇ cita"}
+            </span>
+            <span className="font-mono text-sm font-bold tabular-nums">{a.time}</span>
+            <span className="text-sm font-bold">{a.label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
