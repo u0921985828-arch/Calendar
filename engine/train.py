@@ -5,7 +5,8 @@ import unicodedata, re, json, math
 
 STOP = set("de la el los las un una unos unas y o u a e en con por para que se su sus mi mis "
            "tu tus al del lo le les me te nos os es son ser estar he ha han hay muy mas este esta "
-           "esto ese esa eso como cuando donde sin sobre entre hasta desde ya no si mismo cada".split())
+           "esto ese esa eso como cuando donde sin sobre entre hasta desde ya no si mismo cada "
+           "hacer poner tener dar ir cosa cosas algo tengo quiero necesito".split())
 
 def strip_accents(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
@@ -64,6 +65,12 @@ INTENTS = {
  "regalo": {"ex":["comprar un regalo","buscar un regalo de cumpleanos","pensar que regalar","comprar el regalo para mi pareja","buscar un detalle"],
    "steps":[["Pensar en gustos y presupuesto: %s",6],["Buscar 3 opciones",10],["Elegir y comprar",15],["Envolver o preparar",8],["Preparar la felicitacion",5]]},
 }
+
+try:
+    from intents_extra import EXTRA
+    INTENTS.update(EXTRA)
+except ImportError:
+    pass
 
 docs = []  # (intent, tokens)
 for intent, d in INTENTS.items():
