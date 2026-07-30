@@ -1,0 +1,10 @@
+.gradle/
+build/
+app/build/
+local.properties
+# La web app se copia aquí en tiempo de build (fuente única: public/demo.html)
+app/src/main/assets/index.html
+# Wrapper generado por CI
+gradle/
+gradlew
+gradlew.bat

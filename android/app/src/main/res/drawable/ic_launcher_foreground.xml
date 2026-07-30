@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- pestañas del calendario -->
+    <path android:fillColor="#FFFFFF" android:pathData="M42,30 h5 v9 h-5 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M61,30 h5 v9 h-5 z" />
+    <!-- cuerpo del calendario -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="4" android:fillColor="#00000000"
+        android:pathData="M32,37 h44 v41 h-44 z" />
+    <!-- línea de cabecera -->
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="4" android:fillColor="#00000000"
+        android:pathData="M32,49 h44" />
+    <!-- celdas: hoy en verde neón, otra en cian -->
+    <path android:fillColor="#B8FF3C" android:pathData="M37,55 h13 v10 h-13 z" />
+    <path android:fillColor="#00E5FF" android:pathData="M58,55 h13 v10 h-13 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M37,68 h13 v6 h-13 z" android:fillAlpha="0.35" />
+</vector>
