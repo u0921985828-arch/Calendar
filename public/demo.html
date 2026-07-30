@@ -243,6 +243,19 @@
   .sheet-card .btn-action{width:100%;margin-top:12px;}
   .sheet-card input[type=password]{width:100%;border:1px solid var(--ink);background:var(--cement);padding:12px;font-size:14px;margin-top:12px;}
 
+  /* Timeline por horas */
+  .tl{position:relative;margin-top:10px;}
+  .tl-line{position:absolute;left:0;right:0;height:0;border-top:1px solid rgba(17,17,17,.12);}
+  .tl-line .tl-h{position:absolute;left:0;top:-6px;font-family:var(--mono);font-size:9px;color:rgba(17,17,17,.45);background:var(--cement);padding-right:3px;}
+  .tl-now{position:absolute;left:40px;right:0;height:0;border-top:2px solid var(--alert);z-index:4;}
+  .tl-b{position:absolute;border:1px solid var(--ink);background:var(--paper);overflow:hidden;padding:2px 5px;z-index:2;cursor:pointer;}
+  .tl-b.ev{border-left:4px solid var(--focus);}
+  .tl-b.ev.med{border-left-color:var(--alert);}
+  .tl-b.task{background:var(--cement);border-left:4px solid var(--action);}
+  .tl-b.done{opacity:.5;}
+  .tl-b .tl-t{font-family:var(--mono);font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tl-b .tl-n{font-size:12px;font-weight:800;line-height:1.15;overflow:hidden;text-overflow:ellipsis;}
+
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -320,6 +333,14 @@
     <button class="set-btn danger" id="stReset"><span>Empezar de cero</span><span>↺</span></button>
     <button class="alt" id="stCancel">Cerrar</button>
     <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none" aria-hidden="true" />
+  </div>
+</div>
+
+<div class="sheet" id="taskSheet">
+  <div class="sheet-card">
+    <div class="k">Tarea</div>
+    <div id="taskSheetBody"></div>
+    <button class="alt" id="taskSheetClose">Cerrar</button>
   </div>
 </div>
 
@@ -448,7 +469,7 @@
   function daysUntil(ds){return Math.round((parse(ds)-parse(todayISO()))/86400000);}
   function taskSize(t){return t.steps.length?t.steps.filter(function(s){return !s.done;}).reduce(function(n,s){return n+(s.est||0);},0):15;}
   // Priorización (estudio 4.4): urgencia + encaje de energía + primer paso listo − tamaño.
-  function score(t){var s=0;if(t.due){s+=Math.max(0,30-daysUntil(t.due)*4);}if(t.phase===currentPhaseKey())s+=8;if(t.steps.length&&t.steps.some(function(x){return !x.done;}))s+=6;s-=taskSize(t)*0.05;return s;}
+  function score(t){var s=0;if(t.due){s+=Math.max(0,30-daysUntil(t.due)*4);}if(t.time){var mn=hmToMin(t.time),now=new Date().getHours()*60+new Date().getMinutes(),df=mn-now;if(df>=-30&&df<=180)s+=10-Math.abs(df)/30;}if(t.steps.length&&t.steps.some(function(x){return !x.done;}))s+=6;s-=taskSize(t)*0.05;return s;}
   function nextActionToday(){var c=tasks.filter(function(t){return t.date===todayISO()&&t.status!=="hecha";});if(!c.length)return null;c.sort(function(a,b){return score(b)-score(a);});return c[0];}
 
   // ---------- Interoperabilidad .ics (Google/Apple Calendar) ----------
@@ -497,21 +518,21 @@
     var i=el("input");i.type=type||"text";i.value=val||"";i.oninput=function(){onInput(i.value);};
     w.appendChild(i);parent.appendChild(w);return i;
   }
-  function openEditor(type,obj){
+  function openEditor(type,obj,pre){
     var isNew=!obj;
     var body=$("#editorBody");body.innerHTML="";$("#editorErr").textContent="";
     $("#editorK").textContent=type==="task"?(isNew?"Nueva tarea":"Editar tarea"):(isNew?"Nuevo evento":"Editar evento");
     $("#editorTitle").textContent=type==="task"?"Tarea":"Evento con hora";
     var draft,first;
     if(type==="task"){
-      draft=isNew?{id:id("task"),title:"",status:"planificada",energy:"media",phase:"meseta",date:selDate,steps:[]}:JSON.parse(JSON.stringify(obj));
+      draft=isNew?Object.assign({id:id("task"),title:"",status:"planificada",energy:"media",phase:"meseta",date:selDate,time:"",steps:[]},pre||{}):JSON.parse(JSON.stringify(obj));
       first=field(body,"Título",draft.title,function(v){draft.title=v;});
       seg(body,"¿Cuánta energía pide?",[{v:"alta",t:"Alta"},{v:"media",t:"Media"},{v:"baja",t:"Baja"}],draft.energy,function(v){draft.energy=v;});
-      seg(body,"Momento del día",[{v:"arranque",t:"Empezar"},{v:"pico",t:"A tope"},{v:"meseta",t:"Suave"},{v:"cierre",t:"Cierre"}],draft.phase,function(v){draft.phase=v;},true);
+      field(body,"Hora (opcional)",draft.time||"",function(v){draft.time=v;},"time");
       field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
       field(body,"Fecha límite (opcional)",draft.due||"",function(v){draft.due=v;},"date");
     } else {
-      draft=isNew?{id:id("ev"),label:"",time:"09:00",date:selDate,kind:"cita",repeat:"none"}:JSON.parse(JSON.stringify(obj));
+      draft=isNew?Object.assign({id:id("ev"),label:"",time:"09:00",date:selDate,kind:"cita",repeat:"none"},pre||{}):JSON.parse(JSON.stringify(obj));
       first=field(body,"Título",draft.label,function(v){draft.label=v;});
       field(body,"Hora",draft.time,function(v){draft.time=v;},"time");
       field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
@@ -570,7 +591,7 @@
     } else if(!isDone){
       var bd=el("button","btn-line","Partir en pasos");bd.onclick=function(){doBreakdown(task.id);};bd.style.marginTop="12px";card.appendChild(bd);
     }
-    var foot=el("div","task-foot");foot.appendChild(el("span","prog",total>0?done+"/"+total+" pasos":"sin partir"));
+    var foot=el("div","task-foot");foot.appendChild(el("span","prog",(total>0?done+"/"+total+" pasos":"sin partir")+" · ~"+taskMinutes(task)+"m"));
     if(!isDone){var fb=el("button","btn-focus","Foco →");fb.onclick=function(){openFocus(task.id);};foot.appendChild(fb);}
     else foot.appendChild(el("span","foot-done","✓ Hecha"));
     card.appendChild(foot);return card;
@@ -709,15 +730,56 @@
       if(nx){var na=el("button","nextaction");na.setAttribute("aria-label","Lo siguiente: "+nx.title);na.appendChild(el("span","na-k","▶ Lo siguiente"));na.appendChild(el("span","na-t",nx.title));na.onclick=function(){openFocus(nx.id);};sc.appendChild(na);}
     }
 
-    var evs=eventsOn(selDate).sort(function(a,b){return a.time<b.time?-1:1;});
-    var eh=el("div","sec-h");eh.appendChild(el("h2",null,"Con hora"));eh.appendChild(el("span","load",evs.length?evs.length+"":"—"));sc.appendChild(eh);
-    if(!evs.length)sc.appendChild(el("p","sec-empty","— sin citas ni medicación"));
-    else evs.forEach(function(e){sc.appendChild(eventRow(e));});
+    // --- Sin hora: tareas del día sin hora asignada (con sus pasos) ---
+    var untimed=tasks.filter(function(t){return t.date===selDate&&!t.time;});
+    untimed.sort(function(a,b){var da=a.status==="hecha"?1:0,db=b.status==="hecha"?1:0;if(da!==db)return da-db;return score(b)-score(a);});
+    if(untimed.length){
+      var sh=el("div","sec-h");sh.appendChild(el("h2",null,"Sin hora"));sh.appendChild(el("span","load",untimed.length+""));sc.appendChild(sh);
+      untimed.forEach(function(t){sc.appendChild(taskCard(t));});
+    }
 
-    var nowKey=isToday?currentPhaseKey():null;
-    var order=[];if(nowKey){order.push(nowKey);PHASES.forEach(function(x){if(x.key!==nowKey)order.push(x.key);});}else order=PHASES.map(function(x){return x.key;});
-    order.forEach(function(k){sc.appendChild(phaseSection(k,selDate,k===nowKey));});
+    // --- Día por horas 00:00–23:00, bloques proporcionales a la duración ---
+    var gh=el("div","sec-h");gh.appendChild(el("h2",null,"El día"));gh.appendChild(el("span","load","00–23 h"));sc.appendChild(gh);
+    renderTimeline(sc,selDate,isToday);
   }
+
+  var HOURPX=48, PXMIN=HOURPX/60;
+  function hmToMin(t){var m=/^(\d{1,2}):(\d{2})/.exec(t||"");return m?(+m[1])*60+(+m[2]):null;}
+  function minToHM(x){x=Math.max(0,Math.min(1439,Math.round(x)));return pad(Math.floor(x/60))+":"+pad(x%60);}
+  function taskMinutes(t){return t.steps.length?Math.max(15,adj(t.steps.reduce(function(n,s){return n+(s.est||0);},0))):30;}
+  function renderTimeline(sc,date,isToday){
+    var grid=el("div","tl");grid.style.height=(24*HOURPX)+"px";
+    for(var h=0;h<24;h++){var ln=el("div","tl-line");ln.style.top=(h*HOURPX)+"px";ln.appendChild(el("span","tl-h",pad(h)+":00"));grid.appendChild(ln);}
+    if(isToday){var nowMin=new Date().getHours()*60+new Date().getMinutes();var nl=el("div","tl-now");nl.style.top=(nowMin*PXMIN)+"px";grid.appendChild(nl);}
+    // reunir items con hora
+    var items=[];
+    eventsOn(date).forEach(function(e){var s=hmToMin(e.time);if(s!=null)items.push({s:s,e:s+30,kind:"ev",ref:e});});
+    tasks.filter(function(t){return t.date===date&&t.time;}).forEach(function(t){var s=hmToMin(t.time);if(s!=null){var d=taskMinutes(t);items.push({s:s,e:s+d,kind:"task",ref:t,dur:d});}});
+    // empaquetar en columnas (evitar solapes)
+    items.sort(function(a,b){return a.s-b.s||a.e-b.e;});
+    var cols=[];items.forEach(function(it){var placed=false;for(var c=0;c<cols.length;c++){if(cols[c]<=it.s){it.col=c;cols[c]=it.e;placed=true;break;}}if(!placed){it.col=cols.length;cols.push(it.e);}});
+    // clusters para ancho
+    var clusterMax=0,clStart=[],i;items.forEach(function(it,idx){it._i=idx;});
+    var active=[],curMaxEnd=-1,cluster=[];
+    function flush(){var mx=0;cluster.forEach(function(it){mx=Math.max(mx,it.col+1);});cluster.forEach(function(it){it.ncol=mx;});cluster=[];}
+    items.forEach(function(it){if(cluster.length&&it.s>=curMaxEnd){flush();curMaxEnd=-1;}cluster.push(it);curMaxEnd=Math.max(curMaxEnd,it.e);});flush();
+    // pintar bloques
+    items.forEach(function(it){
+      var frac=it.col/it.ncol;
+      var b=el("div","tl-b "+(it.kind==="ev"?(it.ref.kind==="medicacion"?"ev med":"ev"):"task")+(it.kind==="task"&&it.ref.status==="hecha"?" done":""));
+      b.style.top=(it.s*PXMIN)+"px";b.style.height=Math.max(it.kind==="task"?32:22,(it.e-it.s)*PXMIN-2)+"px";
+      b.style.left="calc(44px + "+frac+" * (100% - 44px))";b.style.width="calc((100% - 44px) / "+it.ncol+" - 3px)";
+      var t1=el("div","tl-t");
+      if(it.kind==="ev"){t1.textContent=it.ref.time+"  "+(it.ref.kind==="medicacion"?"💊 ":"")+it.ref.label;b.onclick=function(ev){ev.stopPropagation();openEditor("event",it.ref);};}
+      else{t1.textContent=minToHM(it.s)+"–"+minToHM(it.e)+"  ·  "+it.dur+"m";var t2=el("div","tl-n",it.ref.title);b.appendChild(t1);b.appendChild(t2);b.onclick=function(ev){ev.stopPropagation();openTaskSheet(it.ref.id);};grid.appendChild(b);return;}
+      b.appendChild(t1);grid.appendChild(b);
+    });
+    // tocar un hueco = añadir evento a esa hora
+    grid.onclick=function(ev){var rect=grid.getBoundingClientRect();var y=ev.clientY-rect.top;var mins=Math.round((y/PXMIN)/15)*15;openEditor("event",null,{time:minToHM(mins),date:date});};
+    sc.appendChild(grid);
+  }
+  var openTaskId=null;
+  function openTaskSheet(tId){var t=tasks.filter(function(x){return x.id===tId;})[0];if(!t)return;openTaskId=tId;var body=$("#taskSheetBody");body.innerHTML="";body.appendChild(taskCard(t));openSheet("#taskSheet");}
 
   // ---------- CAPTURA ----------
   function renderCaptura(sc){
@@ -749,6 +811,8 @@
     var sc=$("#screen");sc.innerHTML="";(RENDER[activeTab]||renderMes)(sc);
     document.querySelectorAll(".tab").forEach(function(b){b.setAttribute("aria-selected",b.getAttribute("data-tab")===activeTab?"true":"false");});
     $("#fab").style.display=activeTab==="captura"?"none":"flex";
+    // Mantener la hoja de tarea sincronizada si está abierta.
+    if($("#taskSheet")&&$("#taskSheet").classList.contains("open")&&openTaskId){var tk=tasks.filter(function(x){return x.id===openTaskId;})[0];if(tk){var tb=$("#taskSheetBody");tb.innerHTML="";tb.appendChild(taskCard(tk));}else{closeSheet("#taskSheet");openTaskId=null;}}
   }
   function setTab(name){activeTab=name;$("#screen").scrollTop=0;renderActive();}
   function openSheet(sel){$(sel).classList.add("open");}
@@ -830,6 +894,7 @@
   $("#stDisc").addEventListener("click",function(){closeSheet("#settings");$("#disclaimer").style.display="flex";});
   $("#stReset").addEventListener("click",function(){if(confirm("¿Borrar todos los datos de este dispositivo?")){LS.removeItem("nf_vault");LS.removeItem("nf_salt");LS.removeItem("nf_onb");LS.removeItem("nf_disc");location.reload();}});
   $("#stCancel").addEventListener("click",function(){closeSheet("#settings");});
+  $("#taskSheetClose").addEventListener("click",function(){closeSheet("#taskSheet");openTaskId=null;});
   $("#ofPause").addEventListener("click",function(){focus.running=!focus.running;this.textContent=focus.running?"Pausa":"Sigue";});
   $("#ofEnd").addEventListener("click",closeFocus);$("#ofExit").addEventListener("click",closeFocus);
   $("#ofMute").addEventListener("click",function(){focus.muted=!focus.muted;this.textContent=focus.muted?"Silenciado":"Silenciar";if(focus.muted)$("#nudge").style.display="none";});

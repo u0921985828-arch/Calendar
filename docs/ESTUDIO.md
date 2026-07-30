@@ -57,12 +57,15 @@ Servidor: key en env, rate-limit, caché por título normalizado, validación.
 La demo usa la heurística local como sustituto; el producto usa Claude con esa
 heurística de red de seguridad.
 
-### 4.2 Colocación por energía + sobrecarga  *(implementado)*
+### 4.2 Día por horas con bloques de duración  *(implementado)*
+El día es una línea de tiempo de 00:00 a 23:00. Cada tarea dura la suma de los
+pasos del desglose (o 30 min si no está partida) y ocupa un bloque proporcional;
+partirla ajusta su tamaño. Lo sin hora va a una banda "Sin hora" con sus pasos.
 ```
-CAP = { arranque:60, pico:120, meseta:120, cierre:60 }  // minutos
-carga(fase, día) = Σ estimación de pasos no hechos
-si carga > CAP[fase]: marcar "demasiado" → sugerir mover
-"come la rana": lo de energía ALTA se ofrece primero en el pico
+duración(tarea) = Σ estimación de pasos (·factor calibración) | 30 min si vacía
+bloque: top = inicio·px/min ; alto = duración·px/min
+solapes → empaquetado en columnas (sweep)
+tocar hueco = añadir a esa hora ; tocar tarea = ver/editar sus pasos
 ```
 
 ### 4.3 Rollover inteligente  *(implementado)*
