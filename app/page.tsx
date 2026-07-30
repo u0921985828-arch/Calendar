@@ -1,5 +1,5 @@
-import Dashboard from "@/components/dashboard/Dashboard";
+import { VaultGate } from "@/components/dashboard/VaultGate";
 
 export default function Page() {
-  return <Dashboard />;
+  return <VaultGate />;
 }

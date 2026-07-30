@@ -61,7 +61,8 @@ app/
                           validación de salida, fallback heurístico)
 components/
   dashboard/
-    Dashboard.tsx     Orquestador con estado + persistencia local
+    VaultGate.tsx     Puerta con passphrase: descifra y arranca el Dashboard
+    Dashboard.tsx     Orquestador con estado + guardado cifrado
     Disclaimer.tsx    Aviso clínico "no es dispositivo médico" (persistente)
     Onboarding.tsx    Bienvenida de 3 pasos (primera visita)
     BrainDump.tsx     Captura de fricción cero
@@ -81,7 +82,8 @@ lib/
   breakdown.ts        Desglose contextual + breakdownWithLLM (→ /api/breakdown)
   breakdown.test.ts   Tests del desglose (vitest)
   status.ts / .test.ts  Estado derivado de pasos + tests
-  persist.ts          Persistencia local (con nota de cifrado para prod)
+  crypto.ts           Cifrado AES-GCM + PBKDF2 (WebCrypto)
+  persist.ts          Caja fuerte cifrada en reposo (create/unlock/save)
   seed.ts             Datos de demo
   id.ts               IDs de cliente (crypto)
 docs/
@@ -91,12 +93,18 @@ docs/
 ## Auditoría aplicada
 
 El repo incorpora los hallazgos de `docs/AUDITORIA.md` (P0–P3): disclaimer
-clínico, persistencia, LLM del lado servidor, contención del hiperfoco (nudges
-≥ 25 min, pausa obligatoria, avisos de comida/medicación), racha indulgente,
-recordatorio de medicación, marcador de fase actual, lenguaje llano +
-onboarding, triaje sin parálisis, accesibilidad (focus trap, contraste AA,
-glifo en checks) y tests. Config: `ANTHROPIC_API_KEY` en el entorno activa el
-desglose con Claude; sin ella, usa la heurística local.
+clínico, **cifrado en reposo de los datos de salud** (AES-GCM 256 con clave
+derivada por PBKDF2 de una passphrase que no se guarda; ver `VaultGate` +
+`lib/crypto.ts` + `lib/persist.ts`), LLM del lado servidor, contención del
+hiperfoco (nudges ≥ 25 min, pausa obligatoria, avisos de comida/medicación),
+racha indulgente, recordatorio de medicación, marcador de fase actual, lenguaje
+llano + onboarding, triaje sin parálisis, accesibilidad (focus trap, contraste
+AA, glifo en checks) y tests. Config: `ANTHROPIC_API_KEY` en el entorno activa
+el desglose con Claude; sin ella, usa la heurística local.
+
+Límite honesto del cifrado: protege el dato en reposo en el dispositivo; la
+seguridad depende de la fuerza de la passphrase y de que el dispositivo no esté
+comprometido. No sustituye un backend con control de acceso.
 
 ---
 

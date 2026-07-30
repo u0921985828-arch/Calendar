@@ -9,11 +9,11 @@ import type {
   Task,
   WeekDay,
 } from "@/lib/types";
-import { SEED_TASKS, SEED_DOPAMINE, SEED_ANCHORS, SEED_TODAY } from "@/lib/seed";
+import { SEED_TODAY } from "@/lib/seed";
 import { todayWeekDay, currentPhase } from "@/lib/design-tokens";
 import { breakdownWithLLM } from "@/lib/breakdown";
 import { makeId } from "@/lib/id";
-import { loadState, saveState } from "@/lib/persist";
+import type { PersistedState } from "@/lib/persist";
 import { statusFromSteps } from "@/lib/status";
 import { Disclaimer } from "./Disclaimer";
 import { Onboarding } from "./Onboarding";
@@ -32,15 +32,19 @@ const PHASE_BY_ENERGY: Record<EnergyLevel, Task["phase"]> = {
 
 /**
  * DASHBOARD — orquestador principal.
- * Estado controlado por props hacia los hijos (puros). Se PERSISTE en local
- * (ver lib/persist) para no perder nada al recargar. Aviso clinico y
- * onboarding se montan aqui.
+ * Arranca desde `boot.initial` (estado descifrado por VaultGate) y persiste
+ * cifrando via `boot.onSave` en cada cambio. Estado controlado por props hacia
+ * los hijos (puros). Aviso clinico y onboarding se montan aqui.
  */
-export default function Dashboard() {
-  const [captures, setCaptures] = useState<CaptureNode[]>([]);
-  const [tasks, setTasks] = useState<Task[]>(SEED_TASKS);
-  const [anchors, setAnchors] = useState<Anchor[]>(SEED_ANCHORS);
-  const [dopamine, setDopamine] = useState<DopamineMetric>(SEED_DOPAMINE);
+export default function Dashboard({
+  boot,
+}: {
+  boot: { initial: PersistedState; onSave: (s: PersistedState) => void };
+}) {
+  const [captures, setCaptures] = useState<CaptureNode[]>(boot.initial.captures);
+  const [tasks, setTasks] = useState<Task[]>(boot.initial.tasks);
+  const [anchors, setAnchors] = useState<Anchor[]>(boot.initial.anchors);
+  const [dopamine, setDopamine] = useState<DopamineMetric>(boot.initial.dopamine);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
   const [sessionCount, setSessionCount] = useState(0);
 
@@ -49,27 +53,19 @@ export default function Dashboard() {
   const [selectedDay, setSelectedDay] = useState<WeekDay>(SEED_TODAY as WeekDay);
   const [today, setToday] = useState<WeekDay | null>(null);
   const [phaseNow, setPhaseNow] = useState<Task["phase"] | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Carga inicial: hoy real + estado persistido.
   useEffect(() => {
     setToday(todayWeekDay());
     setPhaseNow(currentPhase());
-    const saved = loadState();
-    if (saved) {
-      setTasks(saved.tasks);
-      setCaptures(saved.captures);
-      setDopamine(saved.dopamine);
-      setAnchors(saved.anchors);
-    }
-    setHydrated(true);
+    setMounted(true);
   }, []);
 
-  // Persistencia: guarda tras cada cambio, una vez hidratado.
+  // Persistencia cifrada: guarda tras cada cambio, una vez montado.
   useEffect(() => {
-    if (!hydrated) return;
-    saveState({ tasks, captures, dopamine, anchors });
-  }, [hydrated, tasks, captures, dopamine, anchors]);
+    if (!mounted) return;
+    boot.onSave({ tasks, captures, dopamine, anchors });
+  }, [mounted, tasks, captures, dopamine, anchors, boot]);
 
   const focusTask = useMemo(
     () => tasks.find((t) => t.id === focusTaskId) ?? null,

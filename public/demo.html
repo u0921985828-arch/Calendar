@@ -301,6 +301,23 @@
   </div>
 </div>
 
+<!-- Caja fuerte: passphrase gate (cifrado en reposo) -->
+<div class="onb" id="vault">
+  <div class="onb-card">
+    <div class="step-n">Cifrado local · AES-GCM</div>
+    <h3 id="vaultTitle">Protege tus datos</h3>
+    <p id="vaultBody"></p>
+    <input type="password" id="vaultPass" placeholder="Contraseña" aria-label="Contraseña"
+      style="margin-top:14px;width:100%;border:1px solid var(--ink);background:var(--cement);padding:10px 12px;font-family:var(--mono);font-size:14px" />
+    <input type="password" id="vaultPass2" placeholder="Repite la contraseña" aria-label="Repite la contraseña"
+      style="margin-top:8px;width:100%;border:1px solid var(--ink);background:var(--cement);padding:10px 12px;font-family:var(--mono);font-size:14px" />
+    <p id="vaultErr" style="margin:8px 0 0;font-family:var(--mono);font-size:12px;color:var(--alert);min-height:14px"></p>
+    <button class="btn-action" id="vaultGo" style="width:100%;margin-top:12px;padding:12px">Proteger y entrar</button>
+    <button id="vaultAlt" style="background:none;border:none;font-family:var(--mono);font-size:11px;text-transform:uppercase;color:rgba(17,17,17,.5);text-decoration:underline;cursor:pointer;margin-top:12px;width:100%">Seguir sin guardar (solo esta sesión)</button>
+    <p style="margin-top:12px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:rgba(17,17,17,.4);text-align:center">La contraseña no se guarda · si la olvidas, no hay recuperación</p>
+  </div>
+</div>
+
 <!-- Onboarding -->
 <div class="onb" id="onb">
   <div class="onb-card">
@@ -322,15 +339,19 @@
   "use strict";
   var LS = window.localStorage;
 
-  // ---------- Persistencia (P0) ----------
-  // Demo: localStorage. En producción, cifrado en reposo (WebCrypto) o backend
-  // con control de acceso + consentimiento, por tratarse de datos de salud.
-  function save() {
-    try { LS.setItem("nf_state", JSON.stringify({ tasks: tasks, captures: captures, dopamine: dopamine, anchors: anchors })); } catch (e) {}
-  }
-  function load() {
-    try { var r = LS.getItem("nf_state"); return r ? JSON.parse(r) : null; } catch (e) { return null; }
-  }
+  // ---------- Persistencia CIFRADA en reposo (P0) ----------
+  // AES-GCM 256 con clave derivada de una passphrase via PBKDF2 (210k iters).
+  // La passphrase NO se guarda; en localStorage solo hay salt + ciphertext.
+  var vaultKey = null; // CryptoKey en memoria (o null = sin guardar)
+  function b64(buf){var b=new Uint8Array(buf),s="";for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+  function unb64(s){var bin=atob(s),o=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)o[i]=bin.charCodeAt(i);return o;}
+  function derive(pass,salt){return crypto.subtle.importKey("raw",new TextEncoder().encode(pass),"PBKDF2",false,["deriveKey"]).then(function(base){return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:210000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);});}
+  function encStore(data,key){var iv=crypto.getRandomValues(new Uint8Array(12));return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,new TextEncoder().encode(JSON.stringify(data))).then(function(ct){LS.setItem("nf_vault",JSON.stringify({iv:b64(iv.buffer),ct:b64(ct)}));});}
+  function decLoad(key){var raw=LS.getItem("nf_vault");if(!raw)return Promise.resolve(null);var blob=JSON.parse(raw);return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(blob.iv)},key,unb64(blob.ct)).then(function(p){return JSON.parse(new TextDecoder().decode(p));});}
+  function hasVault(){return !!LS.getItem("nf_vault")&&!!LS.getItem("nf_salt");}
+  function createVault(pass){var salt=crypto.getRandomValues(new Uint8Array(16));return derive(pass,salt).then(function(k){LS.setItem("nf_salt",b64(salt.buffer));vaultKey=k;return encStore({tasks:tasks,captures:captures,dopamine:dopamine,anchors:anchors},k);});}
+  function unlock(pass){var salt=unb64(LS.getItem("nf_salt"));return derive(pass,salt).then(function(k){return decLoad(k).then(function(st){vaultKey=k;if(st){tasks=st.tasks;captures=st.captures||[];dopamine=st.dopamine;anchors=st.anchors;}});});}
+  function save(){ if(!vaultKey) return; encStore({tasks:tasks,captures:captures,dopamine:dopamine,anchors:anchors},vaultKey); }
 
   var uid = 0;
   function id(p) { uid++; return (p || "n") + uid + "_" + (uid * 2654435761 % 100000); }
@@ -363,12 +384,9 @@
     baja:  { label:"BAJA",  phase:"cierre" }
   };
 
-  // ---------- Datos ----------
+  // ---------- Datos (semilla; se sobreescriben al descifrar la caja) --------
   var tasks, captures, dopamine, anchors;
-  var loaded = load();
-  if (loaded) {
-    tasks = loaded.tasks; captures = loaded.captures || []; dopamine = loaded.dopamine; anchors = loaded.anchors;
-  } else {
+  (function seed(){
     tasks = [
       { id:"t1", title:"Cerrar propuesta cliente Nordvik", status:"planificada", energy:"alta", phase:"pico", day:todayIdx, steps:[
         { id:"t1s1", label:"Abrir el doc y releer brief", done:true, est:5 },
@@ -394,7 +412,7 @@
       { id:"m2", day:todayIdx, time:"14:00", label:"2ª toma", kind:"medicacion" },
       { id:"a3", day:tmw, time:"11:00", label:"Llamada cliente Nordvik", kind:"cita" }
     ];
-  }
+  })();
 
   // ---------- Desglose contextual (sin cambios de fondo) ----------
   var VERBS = ["cerrar","abrir","escribir","redactar","contestar","responder","enviar","llamar","agendar","reunir","lavar","limpiar","ordenar","comprar","pedir","pagar","estudiar","leer","repasar","arreglar","implementar","programar","preparar","hacer","revisar","terminar","organizar","planificar","buscar","actualizar","mandar","entregar"];
@@ -685,8 +703,49 @@
   $("#onbNext").addEventListener("click",function(){if(onbI<ONB.length-1){onbI++;renderOnb();}else closeOnb();});
   $("#onbSkip").addEventListener("click",closeOnb);
 
-  renderAll();
-  if(!LS.getItem("nf_onb")){renderOnb();$("#onb").classList.add("open");}
+  // ---------- Arranque tras la caja fuerte ----------
+  function boot(){
+    $("#vault").classList.remove("open");
+    renderAll();
+    if(!LS.getItem("nf_onb")){renderOnb();$("#onb").classList.add("open");}
+  }
+  function setVaultErr(m){$("#vaultErr").textContent=m||"";}
+  function showVault(){
+    var mode=hasVault()?"unlock":"create";
+    var isCreate=mode==="create";
+    $("#vaultTitle").textContent=isCreate?"Protege tus datos":"Desbloquear";
+    $("#vaultBody").textContent=isCreate
+      ? "Tus tareas y tu medicación son datos sensibles. Elige una contraseña: cifra todo en este dispositivo."
+      : "Introduce tu contraseña para descifrar tus datos.";
+    $("#vaultPass2").style.display=isCreate?"block":"none";
+    $("#vaultGo").textContent=isCreate?"Proteger y entrar":"Desbloquear";
+    $("#vaultAlt").textContent=isCreate?"Seguir sin guardar (solo esta sesión)":"Olvidé la contraseña · empezar de cero";
+    setVaultErr("");$("#vaultPass").value="";$("#vaultPass2").value="";
+    $("#vault").classList.add("open");
+    $("#vaultPass").focus();
+
+    $("#vaultGo").onclick=function(){
+      var p=$("#vaultPass").value;
+      if(isCreate){
+        if(p.length<6)return setVaultErr("Usa al menos 6 caracteres.");
+        if(p!==$("#vaultPass2").value)return setVaultErr("Las contraseñas no coinciden.");
+        $("#vaultGo").textContent="Cifrando…";
+        createVault(p).then(boot).catch(function(){setVaultErr("No se pudo crear la caja.");$("#vaultGo").textContent="Proteger y entrar";});
+      } else {
+        $("#vaultGo").textContent="Descifrando…";
+        unlock(p).then(boot).catch(function(){setVaultErr("Contraseña incorrecta.");$("#vaultGo").textContent="Desbloquear";});
+      }
+    };
+    $("#vaultPass").onkeydown=function(e){if(e.key==="Enter")$("#vaultGo").click();};
+    $("#vaultPass2").onkeydown=function(e){if(e.key==="Enter")$("#vaultGo").click();};
+    $("#vaultAlt").onclick=function(){
+      if(isCreate){ vaultKey=null; boot(); }
+      else { LS.removeItem("nf_vault");LS.removeItem("nf_salt"); showVault(); }
+    };
+  }
+
+  if(typeof crypto!=="undefined"&&crypto.subtle){ showVault(); }
+  else { boot(); } // sin WebCrypto (http): arranca sin cifrado
 })();
 </script>
 </body>
