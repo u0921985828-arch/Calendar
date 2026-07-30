@@ -38,7 +38,12 @@ real (mes/semana/día), obsesionado con **reducir decisiones**.
 
 ## 4. Núcleo: lógicas y algoritmos
 
-### 4.1 Motor de desglose por IA  *(implementado: heurística + hook IA)*
+### 4.1 Motor de desglose  *(motor offline entrenado + hook IA)*
+
+Dos motores: **offline entrenado aquí** (recuperación TF-IDF + kNN sobre corpus
+curado, en `engine/`; reconoce el tipo de tarea aunque se escriba distinta y
+adapta la receta, sin red) y, con servidor, **Claude** para tareas arbitrarias.
+
 ```
 entrada: título + contexto (fecha/deadline, energía, tamaño, historial)
 1. clasificar naturaleza (correo, informe, mudanza, estudio, trámite…)
