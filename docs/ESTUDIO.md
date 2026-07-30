@@ -68,7 +68,7 @@ al abrir HOY:
   nunca mover en silencio → la persona decide, sin sermón
 ```
 
-### 4.4 Priorización / próxima acción  *(v1)*
+### 4.4 Priorización / próxima acción  *(implementado)*
 ```
 score = w1·urgencia(deadline) + w2·encaje_energía(fase_actual)
       + w3·(tiene_primer_paso?1:0) − w4·tamaño
@@ -111,12 +111,12 @@ decisión o sobra), coste de IA (caché + fallback + límite), datos sensibles
 
 ## 8. Roadmap
 - **MVP (ya):** calendario mes/semana/día, captura, desglose heurístico,
-  energía + carga, rollover, recurrencia diaria/semanal, foco, editar todo,
-  arranque vacío, cifrado local.
-- **V1:** desglose IA en servidor (caché/validación), deadlines + priorización,
-  onboarding que desglosa la tarea real, sync.
-- **V2:** calibración de estimaciones, auto-encaje/rebalanceo, import/export
-  Google/Apple Calendar, body doubling opcional.
+  energía + carga, rollover, recurrencia diaria/semanal, foco, fechas límite +
+  priorización / "lo siguiente", onboarding que desglosa tu tarea real, editar
+  todo, arranque vacío, cifrado local.
+- **V1 (necesita servidor):** desglose IA en servidor (caché/validación), sync,
+  import/export Google/Apple Calendar.
+- **V2:** calibración de estimaciones, auto-encaje/rebalanceo, body doubling.
 
 > Lógicas basadas en evidencia. No constituye consejo médico; la app no es un
 > dispositivo médico.

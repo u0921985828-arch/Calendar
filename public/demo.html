@@ -80,6 +80,13 @@
   .roll-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(17,17,17,.15);}
   .roll-row .l{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .roll-row .hoy{border:1px solid var(--ink);background:var(--action);font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;padding:6px 10px;flex:none;}
+  .nextaction{width:100%;border:1px solid var(--ink);background:var(--focus);padding:10px 12px;margin-top:8px;display:flex;flex-direction:column;gap:2px;text-align:left;}
+  .nextaction:active{transform:translate(2px,2px);}
+  .nextaction .na-k{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;}
+  .nextaction .na-t{font-weight:800;font-size:14px;line-height:1.15;}
+  .due{border:1px solid var(--ink);padding:2px 6px;font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;white-space:nowrap;}
+  .due.urgent{background:var(--alert);color:var(--paper);}
+  .due.soon{background:var(--signal);}
 
   .sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--ink);padding-bottom:6px;margin-top:16px;}
   .sec-h h2{font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin:0;}
@@ -311,7 +318,15 @@
     <div class="k" id="onbStepN">Paso 1 de 3</div>
     <h3 id="onbTitle"></h3>
     <p id="onbBody"></p>
-    <div class="onb-nav">
+    <div id="onbAha" style="display:none">
+      <input type="text" id="onbTask" placeholder="Algo grande que tengas que hacer…" aria-label="Tu tarea"
+        style="width:100%;border:1px solid var(--ink);background:var(--cement);padding:12px;font-size:15px;margin-top:14px" />
+      <button class="btn-action" id="onbSplit" style="width:100%;margin-top:10px">Pártelo en pasos</button>
+      <div id="onbSteps"></div>
+      <button class="btn-action" id="onbAdd" style="width:100%;margin-top:10px;display:none">Añadir a hoy y empezar</button>
+      <button class="alt" id="onbAhaSkip">Ahora no</button>
+    </div>
+    <div class="onb-nav" id="onbNav">
       <button class="alt" id="onbSkip" style="margin:0;width:auto">Saltar</button>
       <div style="display:flex;align-items:center;gap:14px">
         <div class="onb-dots" id="onbDots"></div>
@@ -417,6 +432,11 @@
   function deleteTask(tId){tasks=tasks.filter(function(t){return t.id!==tId;});save();renderActive();}
   function deleteEvent(eId){events=events.filter(function(e){return e.id!==eId;});save();renderActive();}
   function moveTask(tId,ds){tasks.forEach(function(t){if(t.id===tId)t.date=ds;});save();renderActive();}
+  function daysUntil(ds){return Math.round((parse(ds)-parse(todayISO()))/86400000);}
+  function taskSize(t){return t.steps.length?t.steps.filter(function(s){return !s.done;}).reduce(function(n,s){return n+(s.est||0);},0):15;}
+  // Priorización (estudio 4.4): urgencia + encaje de energía + primer paso listo − tamaño.
+  function score(t){var s=0;if(t.due){s+=Math.max(0,30-daysUntil(t.due)*4);}if(t.phase===currentPhaseKey())s+=8;if(t.steps.length&&t.steps.some(function(x){return !x.done;}))s+=6;s-=taskSize(t)*0.05;return s;}
+  function nextActionToday(){var c=tasks.filter(function(t){return t.date===todayISO()&&t.status!=="hecha";});if(!c.length)return null;c.sort(function(a,b){return score(b)-score(a);});return c[0];}
   // Recurrencia: expande virtualmente las ocurrencias de un evento en una fecha.
   function eventsOn(ds){return events.filter(function(e){var r=e.repeat||"none";if(r==="daily")return e.date<=ds;if(r==="weekly")return e.date<=ds&&wdMon(e.date)===wdMon(ds);return e.date===ds;});}
 
@@ -446,6 +466,7 @@
       seg(body,"¿Cuánta energía pide?",[{v:"alta",t:"Alta"},{v:"media",t:"Media"},{v:"baja",t:"Baja"}],draft.energy,function(v){draft.energy=v;});
       seg(body,"Momento del día",[{v:"arranque",t:"Empezar"},{v:"pico",t:"A tope"},{v:"meseta",t:"Suave"},{v:"cierre",t:"Cierre"}],draft.phase,function(v){draft.phase=v;},true);
       field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
+      field(body,"Fecha límite (opcional)",draft.due||"",function(v){draft.due=v;},"date");
     } else {
       draft=isNew?{id:id("ev"),label:"",time:"09:00",date:selDate,kind:"cita",repeat:"none"}:JSON.parse(JSON.stringify(obj));
       first=field(body,"Título",draft.label,function(v){draft.label=v;});
@@ -483,7 +504,9 @@
     var titleWrap=el("div","task-title");titleWrap.appendChild(document.createTextNode(task.title));
     var tl=el("label");tl.style.display="flex";tl.style.alignItems="flex-start";tl.style.gap="0";tl.style.flex="1";tl.style.minWidth="0";tl.appendChild(cbT);tl.appendChild(titleWrap);
     top.appendChild(tl);
-    var r=el("div","r");r.appendChild(el("span","chip "+task.energy,ENERGY[task.energy].label));
+    var r=el("div","r");
+    if(task.due&&!isDone){var du=daysUntil(task.due);var dcls=du<=0?"due urgent":(du<=3?"due soon":"due");var dtxt=du<0?"vencida":du===0?"⚑ hoy":du===1?"⚑ mañana":du<=6?("⚑ "+du+"d"):("⚑ "+dm(task.due));r.appendChild(el("span",dcls,dtxt));}
+    r.appendChild(el("span","chip "+task.energy,ENERGY[task.energy].label));
     var edit=el("button","mini-btn","✎");edit.setAttribute("aria-label","Editar tarea");edit.onclick=function(){openEditor("task",task);};r.appendChild(edit);
     top.appendChild(r);card.appendChild(top);
     if(total>0){
@@ -529,7 +552,7 @@
     h.appendChild(el("span","load"+(over?" over":""),pend.length?("≈"+mins+"m"+(over?" · demasiado":"")):"libre"));
     sec.appendChild(h);sec.appendChild(el("p","sec-sub",ph.hint));
     var list=tasks.filter(function(t){return t.phase===phaseKey&&t.date===date;});
-    list.sort(function(a,b){return (a.status==="hecha"?1:0)-(b.status==="hecha"?1:0);}); // hechas al final
+    list.sort(function(a,b){var da=a.status==="hecha"?1:0,db=b.status==="hecha"?1:0;if(da!==db)return da-db;return score(b)-score(a);}); // hechas al final; dentro, por prioridad
     if(!list.length)sec.appendChild(el("p","sec-empty","— nada aquí"));
     else list.forEach(function(t){sec.appendChild(taskCard(t));});
     return sec;
@@ -629,6 +652,9 @@
         overdue.forEach(function(t){var row=el("div","roll-row");row.appendChild(el("span","l",t.title));var h=el("button","hoy","Hoy");h.onclick=function(){moveTask(t.id,selDate);};row.appendChild(h);roll.appendChild(row);});
         sc.appendChild(roll);
       }
+      // Próxima acción (estudio 4.4): una sola cosa, la siguiente. Un toque = Foco.
+      var nx=nextActionToday();
+      if(nx){var na=el("button","nextaction");na.setAttribute("aria-label","Lo siguiente: "+nx.title);na.appendChild(el("span","na-k","▶ Lo siguiente"));na.appendChild(el("span","na-t",nx.title));na.onclick=function(){openFocus(nx.id);};sc.appendChild(na);}
     }
 
     var evs=eventsOn(selDate).sort(function(a,b){return a.time<b.time?-1:1;});
@@ -702,9 +728,12 @@
 
   // ---------- Onboarding ----------
   var ONB=[{t:"Planifica el mes",b:"En Mes ves el mes entero y pones ahí lo que tienes que hacer. Toca cualquier día para abrirlo. También Semana y Día."},{t:"Organiza por energía",b:"Dentro del día, las tareas van por momento (Para empezar, A tope, Ritmo suave, Cerrar) según la cabeza que piden. Sin horarios rígidos."},{t:"Suelta y parte en pasos",b:"En Captura sueltas ideas sin pensar. Cada tarea se puede partir en micro-pasos, y con Foco te aíslas para hacerla."}];
-  var onbI=0;
-  function renderOnb(){$("#onbStepN").textContent="Paso "+(onbI+1)+" de "+ONB.length;$("#onbTitle").textContent=ONB[onbI].t;$("#onbBody").textContent=ONB[onbI].b;var d=$("#onbDots");d.innerHTML="";ONB.forEach(function(_,i){d.appendChild(el("i",i===onbI?"on":""));});$("#onbNext").textContent=onbI===ONB.length-1?"Empezar":"Siguiente";}
-  function closeOnb(){$("#onb").classList.remove("open");try{LS.setItem("nf_onb","1");}catch(e){}}
+  var onbI=0,onbPending=null;
+  function renderOnb(){$("#onbStepN").textContent="Paso "+(onbI+1)+" de "+ONB.length;$("#onbTitle").textContent=ONB[onbI].t;$("#onbBody").textContent=ONB[onbI].b;var d=$("#onbDots");d.innerHTML="";ONB.forEach(function(_,i){d.appendChild(el("i",i===onbI?"on":""));});$("#onbNext").textContent=onbI===ONB.length-1?"Probar":"Siguiente";}
+  // Aha del estudio: desglosar la tarea REAL del usuario, no una de ejemplo.
+  function enterAha(){$("#onbNav").style.display="none";$("#onbStepN").textContent="Pruébalo";$("#onbTitle").textContent="Mira cómo se parte";$("#onbBody").textContent="Escribe algo grande que tengas que hacer. Te lo parto en pasos diminutos.";$("#onbAha").style.display="block";$("#onbSteps").innerHTML="";$("#onbAdd").style.display="none";$("#onbTask").value="";setTimeout(function(){$("#onbTask").focus();},30);}
+  function renderOnbSteps(steps){var box=$("#onbSteps");box.innerHTML="";steps.forEach(function(s){var li=el("div");li.style.cssText="font-family:var(--mono);font-size:13px;border:1px solid var(--ink);background:var(--cement);padding:8px;margin-top:6px";li.textContent="→ "+s.label+(s.est?("  ·  "+s.est+"m"):"");box.appendChild(li);});}
+  function closeOnb(){$("#onb").classList.remove("open");$("#onbAha").style.display="none";$("#onbNav").style.display="flex";try{LS.setItem("nf_onb","1");}catch(e){}}
 
   // ---------- Boot ----------
   function boot(){
@@ -712,12 +741,12 @@
     if(LS.getItem("nf_disc"))$("#disclaimer").style.display="none";
     var hash=(location.hash||"").replace("#","");if(RENDER[hash])activeTab=hash;
     renderActive();
-    if(!LS.getItem("nf_onb")&&!/nolock/.test(location.search)){renderOnb();openSheet("#onb");}
+    if(!LS.getItem("nf_onb")&&!/noonb/.test(location.search)){renderOnb();openSheet("#onb");}
   }
   function showVault(){
     var isCreate=!hasVault();
     $("#vaultTitle").textContent=isCreate?"Protege tus datos":"Desbloquear";
-    $("#vaultBody").textContent=isCreate?"Tu calendario y tu medicación son datos sensibles. Elige una contraseña: cifra todo en este dispositivo.":"Introduce tu contraseña para descifrar tus datos.";
+    $("#vaultBody").textContent=isCreate?"Tu calendario y tus tareas son datos personales. Elige una contraseña: cifra todo en este dispositivo.":"Introduce tu contraseña para descifrar tus datos.";
     $("#vaultPass2").style.display=isCreate?"block":"none";
     $("#vaultGo").textContent=isCreate?"Proteger y entrar":"Desbloquear";
     $("#vaultAlt").textContent=isCreate?"Seguir sin guardar (solo esta sesión)":"Olvidé la contraseña · empezar de cero";
@@ -747,8 +776,12 @@
   $("#nudgeAck").addEventListener("click",function(){$("#nudge").style.display="none";});
   $("#breakDone").addEventListener("click",closeFocus);
   document.addEventListener("keydown",trap);
-  $("#onbNext").addEventListener("click",function(){if(onbI<ONB.length-1){onbI++;renderOnb();}else closeOnb();});
+  $("#onbNext").addEventListener("click",function(){if(onbI<ONB.length-1){onbI++;renderOnb();}else enterAha();});
   $("#onbSkip").addEventListener("click",closeOnb);
+  $("#onbSplit").addEventListener("click",function(){var v=$("#onbTask").value.trim();if(!v)return;onbPending={title:v,steps:breakdown(v)};renderOnbSteps(onbPending.steps);$("#onbAdd").style.display="block";});
+  $("#onbTask").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();$("#onbSplit").click();}});
+  $("#onbAdd").addEventListener("click",function(){if(!onbPending)return;tasks.unshift({id:id("task"),title:onbPending.title,status:"planificada",energy:"media",phase:"meseta",date:todayISO(),steps:onbPending.steps});onbPending=null;selDate=todayISO();save();closeOnb();setTab("dia");});
+  $("#onbAhaSkip").addEventListener("click",closeOnb);
 
   if(/nolock/.test(location.search)){ boot(); }
   else if(typeof crypto!=="undefined"&&crypto.subtle){ showVault(); }
