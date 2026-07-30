@@ -72,6 +72,14 @@
 
   .add-day{width:100%;border:1px solid var(--ink);background:var(--action);padding:12px;font-weight:800;text-transform:uppercase;font-size:13px;margin-bottom:6px;}
   .add-day:active{transform:translate(2px,2px);}
+  .roll{border:1px solid var(--ink);border-left:5px solid var(--signal);background:var(--paper);padding:10px 12px;margin-top:8px;}
+  .roll .rh2{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .roll .rt{font-family:var(--mono);font-size:12px;font-weight:700;text-transform:uppercase;}
+  .roll .allb{border:1px solid var(--ink);background:var(--cement);font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;padding:5px 9px;}
+  .roll .allb:active{background:var(--action);}
+  .roll-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(17,17,17,.15);}
+  .roll-row .l{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .roll-row .hoy{border:1px solid var(--ink);background:var(--action);font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;padding:6px 10px;flex:none;}
 
   .sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--ink);padding-bottom:6px;margin-top:16px;}
   .sec-h h2{font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin:0;}
@@ -281,7 +289,7 @@
     <div class="k">Añadir</div>
     <h3>¿Qué añades?</h3>
     <button class="choose-b" id="chTask"><div class="t">Tarea</div><div class="d">Algo que hacer, por energía. Se puede partir en pasos.</div></button>
-    <button class="choose-b" id="chEvent"><div class="t">Evento con hora</div><div class="d">Cita, reunión o medicación a una hora fija.</div></button>
+    <button class="choose-b" id="chEvent"><div class="t">Evento con hora</div><div class="d">Cita, reunión o recordatorio a una hora fija. Puede repetirse.</div></button>
     <button class="alt" id="chCancel">Cancelar</button>
   </div>
 </div>
@@ -290,7 +298,7 @@
   <div class="sheet-card">
     <div class="k">Ajustes</div>
     <h3>Ajustes</h3>
-    <button class="set-btn" id="stMed"><span>Añadir medicación / cita</span><span>+</span></button>
+    <button class="set-btn" id="stMed"><span>Añadir evento</span><span>+</span></button>
     <button class="set-btn" id="stLock"><span>Bloquear la app</span><span>⧉</span></button>
     <button class="set-btn" id="stDisc"><span>Ver aviso médico</span><span>⚠</span></button>
     <button class="set-btn danger" id="stReset"><span>Empezar de cero</span><span>↺</span></button>
@@ -372,6 +380,8 @@
   function phaseByKey(k){for(var i=0;i<PHASES.length;i++)if(PHASES[i].key===k)return PHASES[i];return PHASES[3];}
   function currentPhaseKey(){var h=new Date().getHours();for(var i=0;i<PHASES.length;i++){var a=PHASES[i].h[0],b=PHASES[i].h[1];if(b>24){if(h>=a||h<b-24)return PHASES[i].key;}else if(h>=a&&h<b)return PHASES[i].key;}return "cierre";}
   var ENERGY={alta:{label:"ALTA",phase:"pico"},media:{label:"MEDIA",phase:"meseta"},baja:{label:"BAJA",phase:"cierre"}};
+  // Presupuesto de carga mental por fase (minutos). Si se supera -> aviso, no bloqueo.
+  var CAP={arranque:60,pico:120,meseta:120,cierre:60};
 
   // ---------- Estado (vacío) ----------
   var tasks=[], captures=[], events=[];
@@ -406,6 +416,9 @@
   function toggleTaskDone(tId){var t=tasks.filter(function(x){return x.id===tId;})[0];if(!t)return;if(t.status==="hecha")t.status=statusOf(t.steps);else t.status="hecha";save();renderActive();}
   function deleteTask(tId){tasks=tasks.filter(function(t){return t.id!==tId;});save();renderActive();}
   function deleteEvent(eId){events=events.filter(function(e){return e.id!==eId;});save();renderActive();}
+  function moveTask(tId,ds){tasks.forEach(function(t){if(t.id===tId)t.date=ds;});save();renderActive();}
+  // Recurrencia: expande virtualmente las ocurrencias de un evento en una fecha.
+  function eventsOn(ds){return events.filter(function(e){var r=e.repeat||"none";if(r==="daily")return e.date<=ds;if(r==="weekly")return e.date<=ds&&wdMon(e.date)===wdMon(ds);return e.date===ds;});}
 
   // ---------- Editor ----------
   function seg(parent,labelTxt,opts,current,onPick,scroll){
@@ -434,10 +447,11 @@
       seg(body,"Momento del día",[{v:"arranque",t:"Empezar"},{v:"pico",t:"A tope"},{v:"meseta",t:"Suave"},{v:"cierre",t:"Cierre"}],draft.phase,function(v){draft.phase=v;},true);
       field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
     } else {
-      draft=isNew?{id:id("ev"),label:"",time:"09:00",date:selDate,kind:"cita"}:JSON.parse(JSON.stringify(obj));
+      draft=isNew?{id:id("ev"),label:"",time:"09:00",date:selDate,kind:"cita",repeat:"none"}:JSON.parse(JSON.stringify(obj));
       first=field(body,"Título",draft.label,function(v){draft.label=v;});
       field(body,"Hora",draft.time,function(v){draft.time=v;},"time");
       field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
+      seg(body,"Repetir",[{v:"none",t:"No"},{v:"daily",t:"Cada día"},{v:"weekly",t:"Cada semana"}],draft.repeat||"none",function(v){draft.repeat=v;});
       seg(body,"Tipo",[{v:"cita",t:"Cita / reunión"},{v:"medicacion",t:"Medicación"}],draft.kind,function(v){draft.kind=v;});
     }
     var foot=$("#editorFoot");foot.innerHTML="";
@@ -511,10 +525,11 @@
     left.appendChild(el("h2",null,ph.label));if(markNow)left.appendChild(el("span","now-tag","◀ ahora"));h.appendChild(left);
     var pend=tasks.filter(function(t){return t.phase===phaseKey&&t.date===date&&t.status!=="hecha";});
     var mins=0;pend.forEach(function(t){if(!t.steps.length)mins+=15;else t.steps.forEach(function(s){if(!s.done)mins+=(s.est||0);});});
-    var over=phaseKey==="pico"&&mins>120;
+    var over=mins>CAP[phaseKey];
     h.appendChild(el("span","load"+(over?" over":""),pend.length?("≈"+mins+"m"+(over?" · demasiado":"")):"libre"));
     sec.appendChild(h);sec.appendChild(el("p","sec-sub",ph.hint));
     var list=tasks.filter(function(t){return t.phase===phaseKey&&t.date===date;});
+    list.sort(function(a,b){return (a.status==="hecha"?1:0)-(b.status==="hecha"?1:0);}); // hechas al final
     if(!list.length)sec.appendChild(el("p","sec-empty","— nada aquí"));
     else list.forEach(function(t){sec.appendChild(taskCard(t));});
     return sec;
@@ -523,7 +538,7 @@
   // ---------- MES ----------
   function itemsForDay(ds){
     var out=[];
-    events.filter(function(e){return e.date===ds;}).sort(function(a,b){return a.time<b.time?-1:1;}).forEach(function(e){out.push({kind:e.kind==="medicacion"?"med":"ev",label:e.time+" "+e.label});});
+    eventsOn(ds).sort(function(a,b){return a.time<b.time?-1:1;}).forEach(function(e){out.push({kind:e.kind==="medicacion"?"med":"ev",label:e.time+" "+e.label});});
     tasks.filter(function(t){return t.date===ds;}).forEach(function(t){out.push({kind:"task",label:t.title,done:t.status==="hecha"});});
     return out;
   }
@@ -574,7 +589,7 @@
     for(var i=0;i<7;i++){(function(ds){
       var card=el("div","wk-day"+(ds===todayISO()?" today":""));
       var top=el("div","wk-top");var nm=el("div","n");nm.innerHTML=DAYSFULL[wdMon(ds)]+"<small>"+dm(ds)+(ds===todayISO()?" · hoy":"")+"</small>";
-      var evs=events.filter(function(e){return e.date===ds;}).sort(function(a,b){return a.time<b.time?-1:1;});
+      var evs=eventsOn(ds).sort(function(a,b){return a.time<b.time?-1:1;});
       var tks=tasks.filter(function(t){return t.date===ds;});
       top.appendChild(nm);top.appendChild(el("span","cnt",evs.length+" ev · "+tks.filter(function(t){return t.status!=="hecha";}).length+" tar"));card.appendChild(top);
       if(evs.length||tks.length){
@@ -603,7 +618,20 @@
 
     var add=el("button","add-day","+ Añadir al día");add.onclick=function(){openChooser();};sc.appendChild(add);
 
-    var evs=events.filter(function(e){return e.date===selDate;}).sort(function(a,b){return a.time<b.time?-1:1;});
+    // Rollover: lo no hecho de días pasados, se OFRECE (no se mueve solo).
+    if(isToday){
+      var overdue=tasks.filter(function(t){return t.date<selDate&&t.status!=="hecha";});
+      if(overdue.length){
+        var roll=el("div","roll");
+        var rh2=el("div","rh2");rh2.appendChild(el("span","rt","Vienen de atrás · "+overdue.length));
+        var allb=el("button","allb","Todo a hoy");allb.onclick=function(){overdue.forEach(function(t){t.date=selDate;});save();renderActive();};rh2.appendChild(allb);
+        roll.appendChild(rh2);
+        overdue.forEach(function(t){var row=el("div","roll-row");row.appendChild(el("span","l",t.title));var h=el("button","hoy","Hoy");h.onclick=function(){moveTask(t.id,selDate);};row.appendChild(h);roll.appendChild(row);});
+        sc.appendChild(roll);
+      }
+    }
+
+    var evs=eventsOn(selDate).sort(function(a,b){return a.time<b.time?-1:1;});
     var eh=el("div","sec-h");eh.appendChild(el("h2",null,"Con hora"));eh.appendChild(el("span","load",evs.length?evs.length+"":"—"));sc.appendChild(eh);
     if(!evs.length)sc.appendChild(el("p","sec-empty","— sin citas ni medicación"));
     else evs.forEach(function(e){sc.appendChild(eventRow(e));});
@@ -651,7 +679,7 @@
 
   // ---------- Foco ----------
   var DURATION=50*60,BREAK=120;
-  var NUDGES=[{at:25,text:"Bebe agua. Mira lejos 20 segundos.",vital:false},{at:40,text:"Postura: hombros abajo, espalda recta.",vital:false},{at:45,text:"¿Comiste? ¿Toca medicación? Revísalo.",vital:true}];
+  var NUDGES=[{at:25,text:"Bebe agua. Mira lejos 20 segundos.",vital:false},{at:40,text:"Postura: hombros abajo, espalda recta.",vital:false},{at:45,text:"¿Comiste? ¿Bebiste agua? Atiende una necesidad.",vital:true}];
   var focus={taskId:null,elapsed:0,running:false,timer:null,fired:{},muted:false,sessions:0},breakTimer=null,lastFocused=null;
   function fmt(s){return pad(Math.floor(Math.max(s,0)/60))+":"+pad(Math.max(s,0)%60);}
   function openFocus(tId){
