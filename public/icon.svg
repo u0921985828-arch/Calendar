@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#111111"/>
+  <!-- rejilla de calendario, estilo C40 -->
+  <g fill="none" stroke="#ffffff" stroke-width="10">
+    <rect x="96" y="120" width="320" height="296"/>
+    <line x1="96" y1="188" x2="416" y2="188"/>
+  </g>
+  <!-- pestañas superiores -->
+  <rect x="160" y="92" width="20" height="48" fill="#ffffff"/>
+  <rect x="332" y="92" width="20" height="48" fill="#ffffff"/>
+  <!-- celdas: hoy en verde neón, un par marcadas -->
+  <rect x="118" y="210" width="80" height="60" fill="#b8ff3c"/>
+  <rect x="216" y="286" width="80" height="60" fill="#ffffff" opacity="0.28"/>
+  <rect x="314" y="210" width="80" height="60" fill="#00e5ff" opacity="0.85"/>
+  <rect x="216" y="210" width="80" height="60" fill="#ffffff" opacity="0.28"/>
+  <rect x="118" y="286" width="80" height="60" fill="#ffffff" opacity="0.28"/>
+  <rect x="314" y="286" width="80" height="60" fill="#ffffff" opacity="0.28"/>
+</svg>

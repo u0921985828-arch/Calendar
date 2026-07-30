@@ -75,7 +75,7 @@ score = w1·urgencia(deadline) + w2·encaje_energía(fase_actual)
 fase actual primero; dentro, no hechas antes que hechas
 ```
 
-### 4.5 Calibración de estimaciones  *(v2)*
+### 4.5 Calibración de estimaciones  *(implementado)*
 ```
 factor = mediana(real_i / estimado_i) sobre últimas N
 estimación_mostrada = IA · factor  (suavizado, techo 2.5×)
@@ -110,13 +110,15 @@ decisión o sobra), coste de IA (caché + fallback + límite), datos sensibles
 (descartada: rachas rotas = vergüenza/RSD).
 
 ## 8. Roadmap
-- **MVP (ya):** calendario mes/semana/día, captura, desglose heurístico,
-  energía + carga, rollover, recurrencia diaria/semanal, foco, fechas límite +
-  priorización / "lo siguiente", onboarding que desglosa tu tarea real, editar
-  todo, arranque vacío, cifrado local.
-- **V1 (necesita servidor):** desglose IA en servidor (caché/validación), sync,
-  import/export Google/Apple Calendar.
-- **V2:** calibración de estimaciones, auto-encaje/rebalanceo, body doubling.
+- **MVP + V1/V2 client-side (ya):** calendario mes/semana/día, captura, desglose
+  heurístico, energía + carga, rollover, recurrencia diaria/semanal, foco,
+  fechas límite + priorización / "lo siguiente", onboarding que desglosa tu
+  tarea real, calibración de estimaciones, aligerar fases sobrecargadas,
+  import/export `.ics` (Google/Apple), instalable (PWA, offline), editar todo,
+  arranque vacío, cifrado local.
+- **Necesita servidor / credenciales:** desglose IA real con Claude (enganche
+  listo en `app/api/breakdown`), sync multi-dispositivo en la nube, sync OAuth
+  bidireccional con Google/Apple Calendar, body doubling (servidor de presencia).
 
 > Lógicas basadas en evidencia. No constituye consejo médico; la app no es un
 > dispositivo médico.
