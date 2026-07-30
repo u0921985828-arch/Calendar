@@ -1,0 +1,4 @@
+# Despliegue estático en Netlify: sirve la carpeta public/ (la PWA).
+[build]
+  publish = "public"
+  command = ""
