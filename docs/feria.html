@@ -1,0 +1,531 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEUROFLOW · Jurado de la Feria de Innovación</title>
+<style>
+  :root{
+    --ink:#111; --paper:#fff; --cement:#f4f4f4; --line:#111;
+    --action:#b8ff3c; --focus:#00e5ff; --signal:#ffe500; --alert:#ff3b30;
+    --mut:#666;
+    --sans:"Helvetica Neue",Arial,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--cement); color:var(--ink); font-family:var(--sans);
+    line-height:1.4; overflow-x:hidden;
+    padding:0 0 80px;
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding:0 20px}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    background:var(--ink); color:var(--paper);
+    border-bottom:6px solid var(--action);
+    padding:56px 0 44px;
+  }
+  .hero .wrap{display:block}
+  .kicker{
+    font-size:12px; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--action); font-weight:700; margin-bottom:20px;
+  }
+  h1{
+    font-size:clamp(40px,10vw,104px); line-height:.92; font-weight:800;
+    letter-spacing:-.03em; text-transform:uppercase; text-wrap:balance;
+  }
+  h1 em{font-style:normal; color:var(--action)}
+  .sub{
+    margin-top:22px; max-width:60ch; font-size:clamp(15px,2.2vw,19px);
+    color:#d8d8d8; font-weight:400;
+  }
+  .herometa{
+    margin-top:30px; display:flex; flex-wrap:wrap; gap:0;
+    border:1px solid #333;
+  }
+  .herometa div{
+    padding:14px 20px; border-right:1px solid #333; flex:1 1 160px;
+  }
+  .herometa div:last-child{border-right:0}
+  .herometa .n{font-size:34px; font-weight:800; letter-spacing:-.02em}
+  .herometa .l{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:#999; margin-top:4px}
+
+  /* ---------- SCOREBOARD ---------- */
+  section.board{padding:44px 0 8px}
+  .board h2, .rec h2, .verdict h2{
+    font-size:13px; letter-spacing:.24em; text-transform:uppercase;
+    font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:12px;
+  }
+  .board h2::before, .rec h2::before, .verdict h2::before{
+    content:""; width:26px; height:14px; background:var(--action);
+    border:1px solid var(--ink);
+  }
+  .agg{
+    display:grid; grid-template-columns:auto 1fr; gap:0;
+    border:2px solid var(--ink); background:var(--paper);
+  }
+  .agg .big{
+    background:var(--ink); color:var(--paper); padding:28px 34px;
+    display:flex; flex-direction:column; justify-content:center; min-width:210px;
+  }
+  .agg .big .score{font-size:76px; font-weight:800; line-height:.9; letter-spacing:-.03em}
+  .agg .big .score span{color:var(--action); font-size:34px}
+  .agg .big .cap{font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:#aaa; margin-top:10px}
+  .bars{padding:20px 26px; display:flex; flex-direction:column; gap:11px}
+  .bar{display:grid; grid-template-columns:190px 1fr 46px; align-items:center; gap:14px}
+  .bar .name{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em}
+  .bar .track{height:14px; background:var(--cement); border:1px solid var(--ink); position:relative}
+  .bar .fill{height:100%; background:var(--action)}
+  .bar .val{font-size:15px; font-weight:800; text-align:right; font-variant-numeric:tabular-nums}
+  .bar.low .fill{background:var(--alert)}
+  .bar.mid .fill{background:var(--signal)}
+
+  /* ---------- JUDGE CARDS ---------- */
+  section.judges{padding:40px 0}
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--paper); border:2px solid var(--ink);
+    display:flex; flex-direction:column;
+  }
+  .card .top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:18px 20px; border-bottom:2px solid var(--ink); gap:14px;
+  }
+  .card .who .disc{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); font-weight:700}
+  .card .who .name{font-size:20px; font-weight:800; letter-spacing:-.01em; margin-top:3px; line-height:1.05}
+  .card .who .canon{font-size:12px; color:var(--mut); margin-top:6px; max-width:34ch}
+  .card .sc{
+    flex:none; width:66px; height:66px; border:2px solid var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:800; background:var(--action); letter-spacing:-.02em;
+  }
+  .card .sc.mid{background:var(--signal)}
+  .card .sc.low{background:var(--alert); color:var(--paper)}
+  .card .body{padding:16px 20px 20px; display:flex; flex-direction:column; gap:14px}
+  .blk .h{font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:700; margin-bottom:7px; display:flex; align-items:center; gap:8px}
+  .blk .h::before{content:""; width:12px; height:12px; border:1px solid var(--ink)}
+  .blk.pro .h::before{background:var(--action)}
+  .blk.con .h::before{background:var(--alert)}
+  .blk.fix .h::before{background:var(--focus)}
+  .blk ul{list-style:none; display:flex; flex-direction:column; gap:6px}
+  .blk li{font-size:13.5px; padding-left:16px; position:relative; line-height:1.35}
+  .blk li::before{content:""; position:absolute; left:0; top:8px; width:7px; height:2px; background:var(--ink)}
+  .blk.con li::before{background:var(--alert); height:7px; top:5px}
+  .quote{
+    font-size:14px; font-style:italic; color:#222; border-left:4px solid var(--ink);
+    padding:4px 0 4px 14px; background:var(--cement);
+  }
+
+  /* ---------- ROADMAP ---------- */
+  section.rec{padding:20px 0 8px}
+  .lanes{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+  @media(max-width:820px){.lanes{grid-template-columns:1fr}}
+  .lane{border:2px solid var(--ink); background:var(--paper)}
+  .lane .lh{padding:14px 18px; border-bottom:2px solid var(--ink); font-weight:800; text-transform:uppercase; letter-spacing:.04em; display:flex; justify-content:space-between; align-items:center; font-size:15px}
+  .lane.p0 .lh{background:var(--alert); color:var(--paper)}
+  .lane.p1 .lh{background:var(--signal)}
+  .lane.p2 .lh{background:var(--action)}
+  .lane .lh .tag{font-size:10px; letter-spacing:.14em; border:1px solid currentColor; padding:3px 7px}
+  .lane ol{list-style:none; padding:14px 18px; display:flex; flex-direction:column; gap:12px; counter-reset:i}
+  .lane li{font-size:13.5px; padding-left:30px; position:relative; line-height:1.35; counter-increment:i}
+  .lane li::before{content:counter(i); position:absolute; left:0; top:-2px; width:20px; height:20px; border:1px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800}
+  .lane li b{display:block; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); margin-top:3px; font-weight:700}
+
+  /* ---------- VERDICT ---------- */
+  section.verdict{padding:40px 0 0}
+  .vbox{border:2px solid var(--ink); background:var(--ink); color:var(--paper); padding:34px}
+  .vbox p{max-width:74ch; font-size:16px; color:#e4e4e4; margin-bottom:16px}
+  .vbox p:last-child{margin-bottom:0}
+  .vbox strong{color:var(--action)}
+  .stamp{
+    display:inline-block; margin-top:8px; border:2px solid var(--action); color:var(--action);
+    padding:8px 16px; font-size:13px; letter-spacing:.18em; text-transform:uppercase; font-weight:800;
+    transform:rotate(-2deg);
+  }
+  footer{padding:40px 0 0; color:var(--mut); font-size:12px; text-align:center}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Feria de Tecnología &amp; Innovación · Sala de jurado</div>
+    <h1>NEUROFLOW<br>a <em>examen</em></h1>
+    <p class="sub">Diez jueces —cada uno guardián de los cánones de su disciplina— someten la aplicación a un escrutinio deliberadamente hostil. No vienen a felicitar: vienen a encontrar dónde se rompe y qué la haría imprescindible.</p>
+    <div class="herometa">
+      <div><div class="n">10</div><div class="l">Cánones evaluados</div></div>
+      <div><div class="n">7,3</div><div class="l">Media global /10</div></div>
+      <div><div class="n">3</div><div class="l">Vetos por resolver</div></div>
+      <div><div class="n">Finalista</div><div class="l">Veredicto</div></div>
+    </div>
+  </div>
+</header>
+
+<section class="board">
+  <div class="wrap">
+    <h2>Marcador agregado</h2>
+    <div class="agg">
+      <div class="big">
+        <div class="score">7,3<span>/10</span></div>
+        <div class="cap">Media ponderada del panel</div>
+      </div>
+      <div class="bars">
+        <div class="bar"><span class="name">Diseño visual / marca</span><span class="track"><span class="fill" style="width:85%"></span></span><span class="val">8,5</span></div>
+        <div class="bar"><span class="name">Psicología clínica</span><span class="track"><span class="fill" style="width:80%"></span></span><span class="val">8,0</span></div>
+        <div class="bar"><span class="name">Seguridad / privacidad</span><span class="track"><span class="fill" style="width:80%"></span></span><span class="val">8,0</span></div>
+        <div class="bar mid"><span class="name">UX / producto</span><span class="track"><span class="fill" style="width:75%"></span></span><span class="val">7,5</span></div>
+        <div class="bar mid"><span class="name">Diseño neurodivergente</span><span class="track"><span class="fill" style="width:75%"></span></span><span class="val">7,5</span></div>
+        <div class="bar mid"><span class="name">Innovación / originalidad</span><span class="track"><span class="fill" style="width:75%"></span></span><span class="val">7,5</span></div>
+        <div class="bar mid"><span class="name">Psiquiatría / seguridad clínica</span><span class="track"><span class="fill" style="width:70%"></span></span><span class="val">7,0</span></div>
+        <div class="bar mid"><span class="name">Ingeniería de software</span><span class="track"><span class="fill" style="width:70%"></span></span><span class="val">7,0</span></div>
+        <div class="bar mid"><span class="name">Accesibilidad (WCAG 2.2)</span><span class="track"><span class="fill" style="width:65%"></span></span><span class="val">6,5</span></div>
+        <div class="bar low"><span class="name">Negocio / mercado</span><span class="track"><span class="fill" style="width:55%"></span></span><span class="val">5,5</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="judges">
+  <div class="wrap">
+    <h2 style="font-size:13px;letter-spacing:.24em;text-transform:uppercase;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:12px"><span style="width:26px;height:14px;background:var(--action);border:1px solid var(--ink);display:inline-block"></span>Actas del panel</h2>
+    <div class="grid">
+
+      <!-- 1 UX -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">UX · Producto</div>
+            <div class="name">Dra. Nielsen-Norman</div>
+            <div class="canon">Heurísticas de usabilidad, coste de interacción, arquitectura de la información.</div>
+          </div>
+          <div class="sc mid">7,5</div>
+        </div>
+        <div class="body">
+          <div class="quote">"El calendario se opera, no se lee. Bien. Pero un usuario nuevo no sabe qué hace la app antes de tocarla."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Vista Mes/Semana/Día con jerarquía clara; el Día por horas mapea duración a espacio (buen modelo mental).</li>
+            <li>"Lo siguiente" reduce la parálisis de decisión a una sola acción visible.</li>
+            <li>Empezar en vacío respeta al usuario: sin datos falsos que limpiar.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>Sin estado vacío guiado: la primera pantalla no enseña el desglose, su mayor diferenciador.</li>
+            <li>El desglose no es editable paso a paso de forma evidente (¿puedo borrar un micro-paso malo?).</li>
+            <li>Falta deshacer global. En TDAH el toque accidental es la norma, no la excepción.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Onboarding de 1 pantalla que desglose una tarea de ejemplo en vivo.</li>
+            <li>Undo/redo persistente + "papelera" de 7 días.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 2 Accesibilidad -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Accesibilidad</div>
+            <div class="name">Comité WCAG 2.2</div>
+            <div class="canon">Contraste, foco visible, tamaño de objetivo, cognición, lectores de pantalla.</div>
+          </div>
+          <div class="sc low">6,5</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Contraste sobresaliente, semántica pendiente. Un lector de pantalla hoy no narra bien vuestro calendario."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Contraste AAA de facto: negro sobre blanco, acentos puros. Legible bajo sol y con baja visión.</li>
+            <li>Lenguaje llano, sin jerga clínica en la interfaz.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>El color solo señala estado (verde=hoy, cian=cita): falla para daltónicos sin etiqueta/forma redundante.</li>
+            <li>Faltan roles ARIA y navegación por teclado real en la rejilla; sin <em>focus ring</em> consistente.</li>
+            <li>Objetivos táctiles de la rejilla por horas cerca del mínimo de 24×24 px (WCAG 2.5.8).</li>
+            <li>Sin respeto explícito a <em>prefers-reduced-motion</em> ni tamaño de fuente del sistema.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Redundancia forma+texto en cada estado; auditar con lector de pantalla (roles grid/gridcell).</li>
+            <li>Escala tipográfica relativa (rem) y modo alto contraste + reduced-motion.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 3 Psicología clínica -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Psicología clínica · TDAH</div>
+            <div class="name">Dr. Barkley (cátedra)</div>
+            <div class="canon">Función ejecutiva, ceguera temporal, intención de implementación, evidencia.</div>
+          </div>
+          <div class="sc">8,0</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Por fin una app que trata la ceguera temporal como un problema de diseño, no de fuerza de voluntad."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Externaliza el tiempo: el Día por horas hace <em>visible</em> lo invisible (Barkley).</li>
+            <li>Combate la falacia de planificación con factor de calibración por historial.</li>
+            <li>Desglose = andamiaje de función ejecutiva; presupuesto de sobrecarga evita el atracón de tareas.</li>
+            <li>Sin gamificación: no explota dopamina extrínseca, decisión clínicamente defendible.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>Falta el disparador contextual de la intención de implementación ("cuándo/dónde", no solo "qué").</li>
+            <li>No hay gestión de la transición entre tareas (el punto de fricción real del TDAH).</li>
+            <li>Sin recordatorio con antelación calibrada al <em>time-blindness</em> (avisar 10 min antes no basta).</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Plantilla "si [situación] entonces [acción]" al crear tarea con hora.</li>
+            <li>Ritual de transición de 2 min entre bloques; avisos de "prepárate" además del "empieza".</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 4 Psiquiatría -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Psiquiatría · Seguridad clínica</div>
+            <div class="name">Dra. Comité Ético</div>
+            <div class="canon">No-maleficencia, riesgo, comorbilidad, límites de un producto no sanitario.</div>
+          </div>
+          <div class="sc mid">7,0</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Me tranquiliza que hayáis quitado el foco en medicación. Ahora hay que blindar los bordes."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>No se presenta como dispositivo médico ni promete tratar; alcance honesto.</li>
+            <li>El presupuesto de sobrecarga protege contra el ciclo de auto-exigencia y culpa.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>TDAH viene con comorbilidad (ansiedad, depresión): un día en rojo puede leerse como fracaso.</li>
+            <li>Sin descargo claro ("no sustituye a atención profesional") ni ruta a ayuda.</li>
+            <li>Rollover infinito de tareas atrasadas puede volverse una lista de la vergüenza.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Tono compasivo ante el incumplimiento; opción "archivar sin culpa" para lo atrasado.</li>
+            <li>Descargo y enlace a recursos en Ajustes; nunca métricas de "productividad" comparativas.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 5 Neurodivergente vivido -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Diseño neurodivergente</div>
+            <div class="name">Panel de experiencia vivida</div>
+            <div class="canon">TDAH + altas capacidades reales usando la app en su día.</div>
+          </div>
+          <div class="sc mid">7,5</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Se siente hecha por alguien que lo entiende. Pero a las 3 semanas, ¿sigo abriéndola?"</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Sobria, sin ruido: no me sobreestimula ni me infantiliza.</li>
+            <li>El desglose baja la barrera de arranque de la tarea temida.</li>
+            <li>Offline y cifrada: confío en volcar aquí lo que no pongo en otras apps.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>La captura rápida ("brain dump") debe ser instantánea; si tarda 3 toques, pierdo la idea.</li>
+            <li>Falta captura por voz: escribir con el pensamiento acelerado es fricción.</li>
+            <li>Sin novedad ni variación, la ceguera de atención hace que deje de "verla".</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Widget/atajo de captura de 0 toques; dictado por voz a texto.</li>
+            <li>Refuerzo intrínseco sutil (progreso real, no confeti) para sostener el hábito.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 6 Diseño visual -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Diseño visual · Marca</div>
+            <div class="name">Estudio de dirección de arte</div>
+            <div class="canon">Sistema, tipografía, consistencia, identidad, cánones editoriales.</div>
+          </div>
+          <div class="sc">8,5</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Tenéis lo más difícil: una identidad reconocible en un mercado de apps intercambiables."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Lenguaje C40 coherente: bordes duros, bloques planos, color como señal, no adorno.</li>
+            <li>Sistema disciplinado; el color codifica función, no estética gratuita.</li>
+            <li>Se distingue de un vistazo del pastel redondeado genérico del sector.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>Depende de la fuente del sistema: la identidad se diluye entre plataformas.</li>
+            <li>El alto contraste sostenido puede fatigar en sesiones largas; falta un modo noche real.</li>
+            <li>Sin micro-jerarquía tipográfica (pesos/anchos): todo grita con la misma voz.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Grotesca propia embebida (data-URI) para fijar la marca; modo oscuro C40.</li>
+            <li>Segundo peso tipográfico para calmar bloques densos.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 7 Ingeniería -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Ingeniería de software</div>
+            <div class="name">Arquitecto principal</div>
+            <div class="canon">Arquitectura, mantenibilidad, pruebas, rendimiento, escalabilidad.</div>
+          </div>
+          <div class="sc mid">7,0</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Un HTML de 137 KB que hace todo esto offline es admirable. También es una bomba de mantenimiento."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Cero dependencias en runtime, 100% offline, APK real vía WebViewAssetLoader (contexto seguro).</li>
+            <li>Motor de desglose entrenado localmente (TF-IDF+kNN): sin coste ni latencia de nube.</li>
+            <li>Interop estándar: import/export .ics sin OAuth.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>Un único archivo monolítico: difícil de testear por unidades y de evolucionar sin regresiones.</li>
+            <li>Sin suite de tests automatizada en el artefacto que envía el usuario (solo verificación manual).</li>
+            <li>El modelo de 65 KB y la lógica conviven en el HTML: acopla datos y presentación.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Extraer módulos + build que produzca el HTML autónomo; tests e2e (Playwright) en CI.</li>
+            <li>Versionar el esquema de datos con migraciones para no romper bóvedas antiguas.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 8 Seguridad -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Seguridad · Privacidad</div>
+            <div class="name">Auditor OWASP / RGPD</div>
+            <div class="canon">Cifrado, superficie de ataque, minimización de datos, cumplimiento.</div>
+          </div>
+          <div class="sc">8,0</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Privacy-by-design de verdad: los datos de salud nunca salen del dispositivo. Raro y valioso."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>AES-GCM 256 + PBKDF2 (210k iter, SHA-256); passphrase nunca almacenada.</li>
+            <li>Sin backend, sin telemetría, sin permisos de red: superficie de ataque mínima.</li>
+            <li>Minimización de datos por defecto: RGPD por arquitectura, no por política.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>Sin passphrase no hay recuperación: olvidarla = pérdida total (sin frase de respaldo).</li>
+            <li>APK debug firmado con clave de depuración: no distribuible en Play Store tal cual.</li>
+            <li>Sin bloqueo automático por inactividad ni protección contra volcado de memoria.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Frase de recuperación opcional + exportación cifrada de respaldo.</li>
+            <li>Auto-bloqueo tras inactividad; firma release con keystore propio.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 9 Negocio -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Negocio · Mercado</div>
+            <div class="name">Socia de capital riesgo</div>
+            <div class="canon">Modelo, diferenciación, retención, coste de adquisición, defensibilidad.</div>
+          </div>
+          <div class="sc low">5,5</div>
+        </div>
+        <div class="body">
+          <div class="quote">"El producto me gusta. El negocio no existe todavía. ¿Cómo ganáis dinero y por qué no os copia Todoist?"</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Nicho claro y desatendido (TDAH+AACC) con dolor real y disposición a pagar.</li>
+            <li>Privacidad radical como ventaja competitiva frente a apps que monetizan datos.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>Sin modelo de ingresos: offline y sin cuenta complica la suscripción.</li>
+            <li>Sin sincronización multidispositivo: barrera de adopción número uno hoy.</li>
+            <li>Foso débil: la lógica es replicable; la marca y la comunidad aún no existen.</li>
+            <li>Sin métricas de retención ni bucle de crecimiento definido.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Sync E2E-cifrado opcional de pago (privacidad sigue intacta) como palanca de ingresos.</li>
+            <li>Construir comunidad clínica: avales de profesionales como foso y canal.</li>
+          </ul></div>
+        </div>
+      </article>
+
+      <!-- 10 Innovación -->
+      <article class="card">
+        <div class="top">
+          <div class="who">
+            <div class="disc">Innovación · Originalidad</div>
+            <div class="name">Jurado de tendencias</div>
+            <div class="canon">Novedad real, oportunidad, tesis contraria al mercado.</div>
+          </div>
+          <div class="sc mid">7,5</div>
+        </div>
+        <div class="body">
+          <div class="quote">"Lo valiente no es la IA: es quitar la gamificación y meter IA local. Vais contra corriente con criterio."</div>
+          <div class="blk pro"><div class="h">Fortalezas</div><ul>
+            <li>Tesis contraria: sin gamificación, sin nube, sin dark patterns. Postura, no moda.</li>
+            <li>IA de desglose <em>en el dispositivo</em>: privada, gratis, instantánea. Contra-tendencia acertada.</li>
+            <li>Cruce poco explorado: diseño editorial brutalista + herramienta clínica.</li>
+          </ul></div>
+          <div class="blk con"><div class="h">Críticas</div><ul>
+            <li>El motor local es potente pero rígido frente a un LLM: no entiende tareas fuera de sus 127 intenciones.</li>
+            <li>"Innovación" sin distribución es un prototipo: falta el gesto memorable que se comparte solo.</li>
+          </ul></div>
+          <div class="blk fix"><div class="h">Mejoras</div><ul>
+            <li>Motor híbrido: local por defecto, LLM opcional (con consentimiento) para lo desconocido.</li>
+            <li>Un momento "wow" demostrable en 10 s para la feria y las tiendas.</li>
+          </ul></div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="rec">
+  <div class="wrap">
+    <h2>Hoja de ruta que exige el jurado</h2>
+    <div class="lanes">
+      <div class="lane p0">
+        <div class="lh">Vetos <span class="tag">P0 · Ya</span></div>
+        <ol>
+          <li>Accesibilidad real: roles ARIA en la rejilla, foco visible, teclado, redundancia color+forma. <b>Comité WCAG</b></li>
+          <li>Deshacer global + papelera de 7 días. <b>UX · Vivido</b></li>
+          <li>Frase de recuperación y auto-bloqueo por inactividad. <b>Seguridad</b></li>
+        </ol>
+      </div>
+      <div class="lane p1">
+        <div class="lh">Palancas <span class="tag">P1 · Trimestre</span></div>
+        <ol>
+          <li>Intención de implementación (si/entonces) + rituales de transición. <b>Psicología</b></li>
+          <li>Captura de 0 toques y dictado por voz. <b>Vivido</b></li>
+          <li>Sync opcional E2E-cifrado de pago como modelo de ingresos. <b>Negocio</b></li>
+          <li>Tono compasivo y "archivar sin culpa" para lo atrasado. <b>Psiquiatría</b></li>
+        </ol>
+      </div>
+      <div class="lane p2">
+        <div class="lh">Ventaja <span class="tag">P2 · Foso</span></div>
+        <ol>
+          <li>Motor híbrido local + LLM opcional con consentimiento. <b>Innovación</b></li>
+          <li>Modularizar + tests e2e en CI + migraciones de datos. <b>Ingeniería</b></li>
+          <li>Tipografía propia embebida y modo oscuro C40. <b>Diseño</b></li>
+          <li>Avales clínicos + comunidad como foso y canal. <b>Negocio</b></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="verdict">
+  <div class="wrap">
+    <h2 style="color:#111">Veredicto del panel</h2>
+    <div class="vbox">
+      <p><strong>NEUROFLOW pasa a la final.</strong> Es de los pocos proyectos que combinan una tesis clínica honesta, una identidad visual reconocible y una postura de privacidad que no se negocia. Donde otros ponen confeti, aquí hay evidencia; donde otros piden tus datos, aquí no salen del teléfono.</p>
+      <p>Sus tres frenos son claros y solucionables: la <strong>accesibilidad técnica</strong> aún no está a la altura de su contraste visual; la <strong>seguridad</strong> necesita una red bajo la cuerda floja de la passphrase; y el <strong>negocio</strong> es hoy un prototipo sin modelo ni sincronización. Ninguno es un defecto de concepto —son deuda de ejecución.</p>
+      <p>Resuelto el bloque P0, el jurado lo situaría por encima de 8,5. La idea es correcta y valiente. Ahora toca hacerla imbatible.</p>
+      <div class="stamp">Finalista · 7,3 / 10</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Acta simulada del jurado · Feria de Tecnología &amp; Innovación · Evaluación de mejora, no certificación.</div>
+</footer>
