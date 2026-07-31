@@ -46,9 +46,7 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new WebViewClientCompat() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                WebResourceResponse r = loader.shouldInterceptRequest(request.getUrl());
-                Log.i("NEUROFLOW_INTERCEPT", request.getUrl() + " -> " + (r == null ? "NULL(red)" : "asset"));
-                return r;
+                return loader.shouldInterceptRequest(request.getUrl());
             }
 
             @Override
