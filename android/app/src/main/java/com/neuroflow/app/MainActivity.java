@@ -2,12 +2,17 @@ package com.neuroflow.app;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.webkit.ConsoleMessage;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
+import androidx.annotation.NonNull;
+import androidx.webkit.WebResourceErrorCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 
@@ -38,6 +43,24 @@ public class MainActivity extends Activity {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return loader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            public void onReceivedError(@NonNull WebView view, @NonNull WebResourceRequest request,
+                                        @NonNull WebResourceErrorCompat error) {
+                // Solo importa el fallo del documento principal (la app en sí).
+                if (request.isForMainFrame()) {
+                    Log.e("NEUROFLOW_LOAD_ERROR", "No se pudo cargar " + request.getUrl());
+                }
+            }
+        });
+
+        // Reenvía los console.* de la web app a logcat: permite verificar el arranque real.
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage m) {
+                Log.i("NEUROFLOW_JS", m.message());
+                return true;
             }
         });
 

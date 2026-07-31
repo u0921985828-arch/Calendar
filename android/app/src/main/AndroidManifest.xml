@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- El WebViewAssetLoader sirve la app bajo https://appassets.androidx.org/,
+         y el WebView exige el permiso INTERNET para cargar cualquier esquema http/https
+         AUNQUE el contenido sea local e interceptado. Sin él: net::ERR_CACHE_MISS.
+         La app no hace tráfico de red real: sigue siendo 100% offline. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:label="@string/app_name"
