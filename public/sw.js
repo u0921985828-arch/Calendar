@@ -1,5 +1,5 @@
 /* Neuroflow service worker: cache-first para funcionar offline (PWA). */
-const CACHE = "neuroflow-v1";
+const CACHE = "neuroflow-v2";
 const ASSETS = ["demo.html", "manifest.webmanifest", "icon.svg"];
 
 self.addEventListener("install", (e) => {

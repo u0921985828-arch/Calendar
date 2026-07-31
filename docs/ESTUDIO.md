@@ -130,3 +130,49 @@ decisión o sobra), coste de IA (caché + fallback + límite), datos sensibles
 
 > Lógicas basadas en evidencia. No constituye consejo médico; la app no es un
 > dispositivo médico.
+
+---
+
+## Novedades — Respuesta al jurado de la feria (P0/P1/P2 aplicados)
+
+Tras la evaluación multi-canon (`docs/feria.html`), se aplicó la hoja de ruta:
+
+**P0 (vetos)**
+- **Accesibilidad WCAG:** rejillas (mes/semana) y bloques del día operables por
+  teclado (Enter/Espacio); marcadores de forma redundantes al color (◆ cita ·
+  ✚ medicación · ▸ tarea) en chips, leyenda y timeline; roles de lista y
+  `aria-label` descriptivos; región `aria-live` para avisos.
+- **Deshacer global + papelera:** cada acción destructiva es reversible (toast
+  "Deshacer" y `Ctrl/Cmd+Z`); los borrados van a una **papelera** que se purga
+  sola a los 7 días (restaurable desde Ajustes).
+- **Frase de recuperación + auto-bloqueo:** el cifrado pasa a **clave maestra
+  envuelta** por la contraseña y por una **frase de recuperación** de 10 palabras
+  (mostrada una vez; nunca almacenada). Olvidar la contraseña ya no borra los
+  datos. **Auto-bloqueo** por inactividad (configurable) y al pasar a segundo
+  plano. Migra sin pérdida los vaults antiguos.
+
+**P1 (palancas)**
+- **Intención de implementación:** campo opcional "Si… (cuándo/dónde)" por tarea
+  (Gollwitzer), visible en la tarjeta.
+- **Ritual de transición + aviso previo:** pre-roll "Prepárate" de 15 s antes del
+  temporizador de foco; banner in-app cuando algo con hora empieza en ≤15 min.
+- **Dictado por voz** en captura y en el título (Web Speech API, se oculta si no
+  está disponible).
+- **Tono compasivo:** "Vienen de atrás" deja de ser una lista de la vergüenza;
+  cada tarea atrasada se puede **soltar/archivar sin culpa**.
+
+**P2 (ventaja)**
+- **Modo oscuro C40** real (claro / oscuro / según el sistema).
+- **Copia de seguridad cifrada** exportable/importable (E2E, sin servidor): el
+  equivalente offline a la sincronización, con la privacidad intacta.
+- **IA en la nube opcional** (opt-in con consentimiento; tu endpoint y tu clave):
+  el motor local sigue siendo el de por defecto y solo se consulta la nube
+  cuando el local duda.
+- **Auto-test in-app** (`?selftest`) + **CI** (`.github/workflows/checks.yml`)
+  que hace `node --check` y ejecuta el auto-test e2e en Chromium.
+
+**Parcial / honesto:** la "captura de 0 toques" se acerca con un **atajo PWA**
+(`#captura`) + autofocus + voz, pero un widget de sistema real excede a una web
+app. La sincronización multidispositivo *en la nube* de pago necesita backend y
+no se provisiona aquí; su equivalente sin servidor es la copia cifrada. Embeber
+una tipografía propia con licencia queda como siguiente paso.
