@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.webkit.WebResourceErrorCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
+import androidx.webkit.WebViewFeature;
 
 /**
  * Aloja la web app (public/demo.html, copiada a assets/index.html) en un WebView.
@@ -49,8 +50,22 @@ public class MainActivity extends Activity {
             public void onReceivedError(@NonNull WebView view, @NonNull WebResourceRequest request,
                                         @NonNull WebResourceErrorCompat error) {
                 // Solo importa el fallo del documento principal (la app en sí).
+                if (!request.isForMainFrame()) return;
+                String info = "url=" + request.getUrl();
+                try {
+                    if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_RESOURCE_ERROR_GET_CODE)) {
+                        info = "code=" + error.getErrorCode() + " " + info;
+                    }
+                } catch (Throwable ignored) { }
+                Log.e("NEUROFLOW_LOAD_ERROR", info);
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request,
+                                            WebResourceResponse errorResponse) {
                 if (request.isForMainFrame()) {
-                    Log.e("NEUROFLOW_LOAD_ERROR", "No se pudo cargar " + request.getUrl());
+                    Log.e("NEUROFLOW_HTTP_ERROR", "status=" + errorResponse.getStatusCode()
+                            + " url=" + request.getUrl());
                 }
             }
         });

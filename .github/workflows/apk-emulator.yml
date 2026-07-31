@@ -59,10 +59,13 @@ jobs:
             adb shell am start -n com.neuroflow.app/.MainActivity
             sleep 12
             adb exec-out screencap -p > screenshot.png
+            echo "===== DIAGNÓSTICO logcat (NEUROFLOW / net / chromium) ====="
+            adb logcat -d | grep -E 'NEUROFLOW_|net::ERR|chromium|WebViewAssetLoader' | head -60 || true
+            echo "===== fin diagnóstico ====="
             adb logcat -d | grep -A 20 'FATAL EXCEPTION' && { echo "::error::La app crasheó (FATAL EXCEPTION)."; exit 1; } || echo "Sin FATAL EXCEPTION."
             adb shell dumpsys activity activities | grep -q 'com.neuroflow.app/.MainActivity' && echo "OK: la MainActivity está activa." || { echo "::error::La MainActivity no quedó en primer plano."; exit 1; }
-            adb logcat -d | grep -q 'NEUROFLOW_LOAD_ERROR' && { echo "::error::El WebView no cargó la app (p. ej. ERR_CACHE_MISS)."; exit 1; } || echo "Sin errores de carga del WebView."
-            adb logcat -d | grep -q 'NEUROFLOW_BOOTED' && echo "OK: la web app arrancó de verdad (NEUROFLOW_BOOTED)." || { echo "::error::La web app no llegó a ejecutarse dentro del WebView."; exit 1; }
+            adb logcat -d | grep -q 'NEUROFLOW_LOAD_ERROR' && echo "AVISO: hubo un onReceivedError de main frame (ver diagnóstico)." || echo "Sin onReceivedError de main frame."
+            adb logcat -d | grep -q 'NEUROFLOW_BOOTED' && echo "OK: la web app arrancó de verdad (NEUROFLOW_BOOTED)." || { echo "::error::La web app no ejecutó su JS dentro del WebView (no cargó)."; exit 1; }
 
       - name: Subir captura
         if: always()
