@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
+                .setDomain("appassets.androidx.org")
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
                 .build();
 
@@ -39,11 +40,15 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
+        s.setAllowFileAccess(true);
+        s.setAllowContentAccess(true);
 
         web.setWebViewClient(new WebViewClientCompat() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return loader.shouldInterceptRequest(request.getUrl());
+                WebResourceResponse r = loader.shouldInterceptRequest(request.getUrl());
+                Log.i("NEUROFLOW_INTERCEPT", request.getUrl() + " -> " + (r == null ? "NULL(red)" : "asset"));
+                return r;
             }
 
             @Override
