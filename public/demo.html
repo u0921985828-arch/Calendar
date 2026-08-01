@@ -258,6 +258,14 @@
   .editor-foot .del{border:1px solid var(--ink);background:var(--paper);padding:13px 16px;font-weight:800;text-transform:uppercase;}
   .editor-foot .del:active{background:var(--alert);color:var(--paper);}
   .editor-foot .cancel{border:1px solid var(--ink);background:var(--paper);padding:13px 16px;font-weight:800;text-transform:uppercase;}
+  /* Selectores propios de fecha/hora (C40), en vez de los nativos de Android */
+  .sheet.picker{z-index:70;}
+  .pick{width:100%;border:1px solid var(--ink);background:var(--cement);padding:12px;font-size:15px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .pick .pv.ph{color:rgba(var(--ink-rgb),.45);}
+  .pick .hint{font-family:var(--mono);font-size:12px;color:rgba(var(--ink-rgb),.55);}
+  .dp-grid .cal-cell{min-height:40px;align-items:center;justify-content:center;padding:0;}
+  .dp-grid .cal-num{align-self:center;}
+  .tp-disp{font-family:var(--mono);font-size:34px;font-weight:800;text-align:center;letter-spacing:.04em;margin:4px 0 14px;}
   .err{font-family:var(--mono);font-size:12px;color:var(--alert);min-height:14px;margin-top:8px;}
   .choose-b{width:100%;border:1px solid var(--ink);background:var(--paper);padding:16px;margin-top:10px;text-align:left;}
   .choose-b:active{background:var(--cement);}
@@ -390,6 +398,22 @@
     <div id="editorBody"></div>
     <p class="err" id="editorErr"></p>
     <div class="editor-foot" id="editorFoot"></div>
+  </div>
+</div>
+
+<div class="sheet picker" id="dpick">
+  <div class="sheet-card">
+    <div class="k" id="dpickK">Fecha</div>
+    <div id="dpickBody"></div>
+    <div class="editor-foot" id="dpickFoot"></div>
+  </div>
+</div>
+
+<div class="sheet picker" id="tpick">
+  <div class="sheet-card">
+    <div class="k" id="tpickK">Hora</div>
+    <div id="tpickBody"></div>
+    <div class="editor-foot" id="tpickFoot"></div>
   </div>
 </div>
 
@@ -917,6 +941,86 @@
     var i=el("input");i.type=type||"text";i.value=val||"";i.oninput=function(){onInput(i.value);};
     w.appendChild(i);parent.appendChild(w);return i;
   }
+  // ---------- Selectores de fecha/hora propios (C40), sin los pop-ups nativos ----------
+  function fmtDate(s){if(!s)return "";var d=parse(s);return DAYSFULL[wdMon(s)].slice(0,3)+" "+d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear();}
+  function pickBox(parent,label,text,ph,onOpen){
+    var w=el("div","fld");w.appendChild(el("label","fld-l",label));
+    var b=el("button","pick");b.type="button";b.setAttribute("aria-label",label);
+    var v=el("span",text?"pv":"pv ph",text||ph);
+    b.appendChild(v);b.appendChild(el("span","hint","▾"));
+    b.onclick=onOpen;w.appendChild(b);parent.appendChild(w);return v;
+  }
+  function dateField(parent,label,getVal,setVal,allowClear){
+    var v=pickBox(parent,label,fmtDate(getVal()),"Elegir fecha",function(){
+      openDatePicker(getVal(),allowClear,label,function(val){setVal(val);v.textContent=val?fmtDate(val):"Elegir fecha";v.className=val?"pv":"pv ph";});
+    });
+  }
+  function timeField(parent,label,getVal,setVal,allowClear){
+    var v=pickBox(parent,label,getVal()||"","— sin hora",function(){
+      openTimePicker(getVal(),allowClear,label,function(val){setVal(val);v.textContent=val||"— sin hora";v.className=val?"pv":"pv ph";});
+    });
+  }
+  // Calendario propio (reutiliza el look del mes).
+  var dpView,dpSel;
+  function renderDPick(){
+    var body=$("#dpickBody");body.innerHTML="";
+    var head=el("div","navhead");
+    var dt=el("div","dt");dt.appendChild(el("div","big",monthLabel(dpView)));head.appendChild(dt);
+    var nb=el("div","nav-btns");
+    var p=el("button",null,"‹");p.type="button";p.setAttribute("aria-label","Mes anterior");p.onclick=function(){dpView=addMonths(dpView,-1);renderDPick();};
+    var tdy=el("button","today","Hoy");tdy.type="button";tdy.onclick=function(){dpView=todayISO();dpSel=todayISO();renderDPick();};
+    var n=el("button",null,"›");n.type="button";n.setAttribute("aria-label","Mes siguiente");n.onclick=function(){dpView=addMonths(dpView,1);renderDPick();};
+    nb.appendChild(p);nb.appendChild(tdy);nb.appendChild(n);head.appendChild(nb);body.appendChild(head);
+    var wd=el("div","cal-wd");["L","M","X","J","V","S","D"].forEach(function(x){wd.appendChild(el("span",null,x));});body.appendChild(wd);
+    var d=parse(dpView),first=new Date(d.getFullYear(),d.getMonth(),1);
+    var start=(first.getDay()+6)%7,gStart=new Date(first);gStart.setDate(1-start);
+    var grid=el("div","cal-grid dp-grid");
+    for(var i=0;i<42;i++){
+      var cd=new Date(gStart);cd.setDate(gStart.getDate()+i);var cs=iso(cd);
+      var out=cd.getMonth()!==d.getMonth();
+      var cell=el("button","cal-cell dp-cell"+(out?" out":"")+(cs===todayISO()?" today":"")+(cs===dpSel?" sel":""));
+      cell.type="button";cell.appendChild(el("span","cal-num",""+cd.getDate()));
+      cell.setAttribute("aria-label",DAYSFULL[wdMon(cs)]+" "+dm(cs));
+      (function(cs){cell.onclick=function(){dpSel=cs;renderDPick();};})(cs);
+      grid.appendChild(cell);
+    }
+    body.appendChild(grid);
+  }
+  function openDatePicker(cur,allowClear,label,onSet){
+    dpSel=cur||"";dpView=cur||todayISO();
+    $("#dpickK").textContent=label||"Fecha";
+    renderDPick();
+    var foot=$("#dpickFoot");foot.innerHTML="";
+    var set=el("button","save","Establecer");set.type="button";set.onclick=function(){onSet(dpSel);closeSheet("#dpick");};foot.appendChild(set);
+    if(allowClear){var clr=el("button","del","Borrar");clr.type="button";clr.onclick=function(){onSet("");closeSheet("#dpick");};foot.appendChild(clr);}
+    var cx=el("button","cancel","Cancelar");cx.type="button";cx.onclick=function(){closeSheet("#dpick");};foot.appendChild(cx);
+    openSheet("#dpick");
+  }
+  // Selector de hora propio (tiras de horas y minutos).
+  function openTimePicker(cur,allowClear,label,onSet){
+    var mn=hmToMin(cur);if(mn==null)mn=9*60;
+    var tpH=Math.floor(mn/60),tpM=mn%60;
+    $("#tpickK").textContent=label||"Hora";
+    var body=$("#tpickBody");body.innerHTML="";
+    var disp=el("div","tp-disp",pad(tpH)+":"+pad(tpM));body.appendChild(disp);
+    body.appendChild(el("label","fld-l","Hora"));
+    var hrow=el("div","seg scroll");var mrow;
+    function upd(){disp.textContent=pad(tpH)+":"+pad(tpM);
+      Array.prototype.forEach.call(hrow.children,function(c,i){c.className="seg-b"+(i===tpH?" on":"");});
+      Array.prototype.forEach.call(mrow.children,function(c,i){c.className="seg-b"+(i===tpM?" on":"");});}
+    for(var h=0;h<24;h++){(function(h){var b=el("button","seg-b"+(h===tpH?" on":""),pad(h));b.type="button";b.onclick=function(){tpH=h;upd();};hrow.appendChild(b);})(h);}
+    body.appendChild(hrow);
+    var ml=el("label","fld-l","Minutos");ml.style.marginTop="12px";body.appendChild(ml);
+    mrow=el("div","seg scroll");
+    for(var m=0;m<60;m++){(function(m){var b=el("button","seg-b"+(m===tpM?" on":""),pad(m));b.type="button";b.onclick=function(){tpM=m;upd();};mrow.appendChild(b);})(m);}
+    body.appendChild(mrow);
+    var foot=$("#tpickFoot");foot.innerHTML="";
+    var set=el("button","save","Establecer");set.type="button";set.onclick=function(){onSet(pad(tpH)+":"+pad(tpM));closeSheet("#tpick");};foot.appendChild(set);
+    if(allowClear){var clr=el("button","del","Borrar");clr.type="button";clr.onclick=function(){onSet("");closeSheet("#tpick");};foot.appendChild(clr);}
+    var cx=el("button","cancel","Cancelar");cx.type="button";cx.onclick=function(){closeSheet("#tpick");};foot.appendChild(cx);
+    openSheet("#tpick");
+    setTimeout(function(){var oh=hrow.querySelector(".on"),om=mrow.querySelector(".on");if(oh)oh.scrollIntoView({inline:"center",block:"nearest"});if(om)om.scrollIntoView({inline:"center",block:"nearest"});},20);
+  }
   function openEditor(type,obj,pre){
     var isNew=!obj;
     var body=$("#editorBody");body.innerHTML="";$("#editorErr").textContent="";
@@ -928,15 +1032,15 @@
       first=field(body,"Título",draft.title,function(v){draft.title=v;});
       if(canDictate()){var mt=el("button","mic","Dictar");mt.type="button";mt.setAttribute("aria-label","Dictar título");mt.style.cssText="margin-top:6px";attachSpeech(mt,first);first.parentNode.appendChild(mt);}
       seg(body,"¿Cuánta energía pide?",[{v:"alta",t:"Alta"},{v:"media",t:"Media"},{v:"baja",t:"Baja"}],draft.energy,function(v){draft.energy=v;});
-      field(body,"Hora (opcional)",draft.time||"",function(v){draft.time=v;},"time");
+      timeField(body,"Hora (opcional)",function(){return draft.time;},function(v){draft.time=v;},true);
       var cf=field(body,"Si… (cuándo/dónde lo harás)",draft.cue||"",function(v){draft.cue=v;});cf.placeholder="termino de comer, en el escritorio…";cf.type="text";
-      field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
-      field(body,"Fecha límite (opcional)",draft.due||"",function(v){draft.due=v;},"date");
+      dateField(body,"Fecha",function(){return draft.date;},function(v){draft.date=v;},false);
+      dateField(body,"Fecha límite (opcional)",function(){return draft.due;},function(v){draft.due=v;},true);
     } else {
       draft=isNew?Object.assign({id:id("ev"),label:"",time:"09:00",date:selDate,kind:"cita",repeat:"none"},pre||{}):JSON.parse(JSON.stringify(obj));
       first=field(body,"Título",draft.label,function(v){draft.label=v;});
-      field(body,"Hora",draft.time,function(v){draft.time=v;},"time");
-      field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
+      timeField(body,"Hora",function(){return draft.time;},function(v){draft.time=v;},false);
+      dateField(body,"Fecha",function(){return draft.date;},function(v){draft.date=v;},false);
       seg(body,"Repetir",[{v:"none",t:"No"},{v:"daily",t:"Cada día"},{v:"weekly",t:"Cada semana"}],draft.repeat||"none",function(v){draft.repeat=v;});
     }
     var foot=$("#editorFoot");foot.innerHTML="";
