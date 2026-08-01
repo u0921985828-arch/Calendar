@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "NEUROFLOW / Organiza tu dia por energia, no por horas",
   description:
-    "Sistema de gestion de tiempo para cerebros TDAH + AACC. Captura sin friccion, bloques por energia, hiperfoco y dopamina operativa. No es un dispositivo medico.",
+    "Sistema de gestion de tiempo para cerebros TDAH + AACC. Captura sin friccion, bloques por energia e hiperfoco.",
 };
 
 export const viewport: Viewport = {

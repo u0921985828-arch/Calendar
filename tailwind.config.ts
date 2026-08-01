@@ -24,7 +24,7 @@ const config: Config = {
         action: "#B8FF3C", // verde neon -> ejecutar / completar
         focus: "#00E5FF", // cian -> foco / atencion
         signal: "#FFE500", // amarillo -> aviso / energia media
-        alert: "#FF3B30", // rojo -> detener / medicacion (solo emergencia real)
+        alert: "#FF3B30", // rojo -> detener / alerta (solo emergencia real)
         calm: "#E7E7E7", // neutro -> energia baja (un dia bajo no es alarma)
       },
       // Stack de sistema (sin CDN externo: elimina FOUT y fuga de IP).

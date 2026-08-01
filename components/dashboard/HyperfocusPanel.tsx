@@ -6,12 +6,12 @@ import type { Task, SoftNudge } from "@/lib/types";
 /**
  * Interrupciones suaves. El primer aviso NO llega antes del min 25: arrancar
  * con TDAH cuesta ~20 min y un nudge temprano expulsa del flow (auditoria).
- * Las marcas `vital` cubren cuidado basico ausente antes: comida y medicacion.
+ * Las marcas `vital` cubren cuidado basico ausente antes: comida y descanso.
  */
 const DEFAULT_NUDGES: SoftNudge[] = [
   { atMin: 25, kind: "hidratacion", label: "Bebe agua. Mira lejos 20 segundos." },
   { atMin: 40, kind: "postura", label: "Postura: hombros abajo, espalda recta." },
-  { atMin: 45, kind: "comida", label: "¿Comiste? ¿Toca medicación? Revísalo.", vital: true },
+  { atMin: 45, kind: "comida", label: "¿Comiste? ¿Bebiste agua? Atiende una necesidad.", vital: true },
 ];
 
 const BREAK_SEC = 120;
@@ -190,7 +190,7 @@ export function HyperfocusPanel({
         ) : null}
       </div>
 
-      {/* Interrupcion suave. `vital` (comida/medicacion) resaltada. */}
+      {/* Interrupcion suave. `vital` (comida/descanso) resaltada. */}
       {nudge && breakLeft === null ? (
         <div
           className={`absolute inset-x-0 bottom-0 border-t px-6 py-4 text-center text-ink ${

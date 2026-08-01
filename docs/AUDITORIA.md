@@ -1,5 +1,11 @@
 # NEUROFLOW — Auditoría Maestra
 
+> **Nota (registro histórico).** Esta auditoría es de una versión anterior. Por
+> decisión de producto, **toda función de medicación/medicina se eliminó** de la
+> app (no se enfoca la organización del TDAH/AACC en la medicación). Las menciones
+> y recomendaciones sobre medicación que aparecen abajo **ya no aplican**: no
+> existe tipo de evento "medicación", ni recordatorios, ni aviso médico.
+
 Revisión multidisciplinar de la app (TDAH + AACC). Cinco lentes independientes
 auditaron el código real y la demo por separado, sin verse entre sí:
 

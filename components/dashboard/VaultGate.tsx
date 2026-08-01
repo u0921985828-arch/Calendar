@@ -95,7 +95,7 @@ export function VaultGate() {
               Protege tus datos
             </h2>
             <p className="mt-2 text-sm text-ink/70">
-              Tus tareas y tu medicación son datos sensibles. Elige una
+              Tus tareas y tu calendario son datos sensibles. Elige una
               contraseña: cifra todo en este dispositivo. No se guarda en ningún
               sitio — si la olvidas, no hay recuperación.
             </p>

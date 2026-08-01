@@ -13,7 +13,7 @@ const STEPS = [
   },
   {
     t: "Hiperfoco con cuidado",
-    b: "Aíslate con un temporizador. Te avisará de beber agua y de tu medicación, y te obligará a una pausa al terminar.",
+    b: "Aíslate con un temporizador. Te avisará de beber agua y de cuidarte, y te obligará a una pausa al terminar.",
   },
 ];
 

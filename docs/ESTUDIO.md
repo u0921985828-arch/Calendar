@@ -114,7 +114,7 @@ vender datos de salud.
 ## 7. Riesgos
 Otra app abandonada (matar con defaults), sobre-features (cada feature quita una
 decisión o sobra), coste de IA (caché + fallback + límite), datos sensibles
-(cifrado en reposo; medicación opcional y secundaria), gamificación tóxica
+(cifrado en reposo), gamificación tóxica
 (descartada: rachas rotas = vergüenza/RSD).
 
 ## 8. Roadmap
@@ -128,8 +128,7 @@ decisión o sobra), coste de IA (caché + fallback + límite), datos sensibles
   listo en `app/api/breakdown`), sync multi-dispositivo en la nube, sync OAuth
   bidireccional con Google/Apple Calendar, body doubling (servidor de presencia).
 
-> Lógicas basadas en evidencia. No constituye consejo médico; la app no es un
-> dispositivo médico.
+> Lógicas basadas en evidencia sobre organización y función ejecutiva.
 
 ---
 
@@ -140,7 +139,7 @@ Tras la evaluación multi-canon (`docs/feria.html`), se aplicó la hoja de ruta:
 **P0 (vetos)**
 - **Accesibilidad WCAG:** rejillas (mes/semana) y bloques del día operables por
   teclado (Enter/Espacio); marcadores de forma redundantes al color (◆ cita ·
-  ✚ medicación · ▸ tarea) en chips, leyenda y timeline; roles de lista y
+  ▸ tarea) en chips, leyenda y timeline; roles de lista y
   `aria-label` descriptivos; región `aria-live` para avisos.
 - **Deshacer global + papelera:** cada acción destructiva es reversible (toast
   "Deshacer" y `Ctrl/Cmd+Z`); los borrados van a una **papelera** que se purga

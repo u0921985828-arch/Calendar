@@ -1,28 +1,17 @@
-import type { Anchor, DopamineMetric, WeekDay } from "@/lib/types";
+import type { DopamineMetric } from "@/lib/types";
 
 /**
  * DOPAMINA OPERATIVA — hitos visuales inmediatos, con racha INDULGENTE.
- * Muestra mejor marca y escudo para no castigar con vergueenza al romperse
- * (RSD). Debajo, la medicacion de hoy como recordatorio dedicado.
+ * Muestra mejor marca y escudo para no castigar con vergueenza al romperse (RSD).
  */
 export function DopamineBar({
   metric,
-  anchors,
-  today,
 }: {
   metric: DopamineMetric;
-  anchors: Anchor[];
-  today: WeekDay | null;
 }) {
   const { routineDoneToday, routineTotalToday, streakDays, bestStreak, shieldAvailable } =
     metric;
   const cells = Array.from({ length: routineTotalToday });
-  const meds =
-    today === null
-      ? []
-      : anchors
-          .filter((a) => a.kind === "medicacion" && a.day === today)
-          .sort((a, b) => (a.time < b.time ? -1 : 1));
 
   return (
     <section className="block-hard bg-ink p-5 text-paper">
@@ -65,28 +54,6 @@ export function DopamineBar({
         ))}
       </div>
 
-      <div className="mt-4 border-t border-paper/30 pt-3">
-        <div className="font-mono text-xs uppercase tracking-wider text-paper/60">
-          Medicación de hoy
-        </div>
-        {meds.length === 0 ? (
-          <div className="mt-2 font-mono text-xs text-paper/40">— sin tomas hoy</div>
-        ) : (
-          <ul className="mt-2 flex flex-col gap-2">
-            {meds.map((m) => (
-              <li
-                key={m.id}
-                className="flex items-center gap-2 border border-focus px-2 py-1.5"
-              >
-                <span className="font-mono text-sm font-bold tabular-nums text-focus">
-                  {m.time}
-                </span>
-                <span className="text-sm font-bold">💊 {m.label}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </section>
   );
 }

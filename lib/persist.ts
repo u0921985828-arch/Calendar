@@ -12,7 +12,7 @@ import {
 /**
  * Persistencia CIFRADA en reposo (auditoria P0).
  *
- * El estado (tareas, medicacion, patrones de energia = datos de salud) se
+ * El estado (tareas, calendario, patrones de energia = datos sensibles) se
  * guarda en localStorage cifrado con AES-GCM. La clave se deriva de una
  * passphrase del usuario y solo vive en memoria mientras la pestana esta
  * abierta. En localStorage solo hay: salt (no secreto) + ciphertext.

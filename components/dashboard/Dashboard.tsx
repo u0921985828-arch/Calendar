@@ -15,7 +15,6 @@ import { breakdownWithLLM } from "@/lib/breakdown";
 import { makeId } from "@/lib/id";
 import type { PersistedState } from "@/lib/persist";
 import { statusFromSteps } from "@/lib/status";
-import { Disclaimer } from "./Disclaimer";
 import { Onboarding } from "./Onboarding";
 import { BrainDump } from "./BrainDump";
 import { CaptureInbox } from "./CaptureInbox";
@@ -164,7 +163,6 @@ export default function Dashboard({
 
   return (
     <>
-      <Disclaimer />
       <Onboarding />
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <header className="mb-8 flex flex-col gap-2 border-b-3 border-ink pb-4 sm:flex-row sm:items-end sm:justify-between">
@@ -189,7 +187,7 @@ export default function Dashboard({
             />
           </div>
           <div className="lg:col-span-1">
-            <DopamineBar metric={dopamine} anchors={anchors} today={today} />
+            <DopamineBar metric={dopamine} />
           </div>
         </div>
 

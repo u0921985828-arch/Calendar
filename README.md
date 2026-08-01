@@ -63,16 +63,15 @@ components/
   dashboard/
     VaultGate.tsx     Puerta con passphrase: descifra y arranca el Dashboard
     Dashboard.tsx     Orquestador con estado + guardado cifrado
-    Disclaimer.tsx    Aviso clínico "no es dispositivo médico" (persistente)
     Onboarding.tsx    Bienvenida de 3 pasos (primera visita)
     BrainDump.tsx     Captura de fricción cero
     CaptureInbox.tsx  Triaje sin parálisis (default MEDIA + por lotes)
     TimeBlocks.tsx    Vista Semana: días + anclas + fases + "◀ ahora" + carga
     WeekNav.tsx       Pills de día (Lun–Dom), HOY con contraste AA
-    AnchorStrip.tsx   Citas y medicación con hora fija
+    AnchorStrip.tsx   Citas con hora fija
     TaskCard.tsx      Tarea + pasos editables (✓ glifo, añadir/borrar/rehacer)
     HyperfocusPanel.tsx  Aislamiento + timer + nudges tardíos + pausa obligatoria
-    DopamineBar.tsx   Racha indulgente (mejor marca + escudo) + medicación
+    DopamineBar.tsx   Racha indulgente (mejor marca + escudo)
   ui/
     EnergyChip.tsx    Señalética de energía
     SectionHeader.tsx Encabezado de bloque (índice + título masivo)
@@ -96,8 +95,8 @@ El repo incorpora los hallazgos de `docs/AUDITORIA.md` (P0–P3): disclaimer
 clínico, **cifrado en reposo de los datos de salud** (AES-GCM 256 con clave
 derivada por PBKDF2 de una passphrase que no se guarda; ver `VaultGate` +
 `lib/crypto.ts` + `lib/persist.ts`), LLM del lado servidor, contención del
-hiperfoco (nudges ≥ 25 min, pausa obligatoria, avisos de comida/medicación),
-racha indulgente, recordatorio de medicación, marcador de fase actual, lenguaje
+hiperfoco (nudges ≥ 25 min, pausa obligatoria, avisos de cuidado básico),
+racha indulgente, marcador de fase actual, lenguaje
 llano + onboarding, triaje sin parálisis, accesibilidad (focus trap, contraste
 AA, glifo en checks) y tests. Config: `ANTHROPIC_API_KEY` en el entorno activa
 el desglose con Claude; sin ella, usa la heurística local.
