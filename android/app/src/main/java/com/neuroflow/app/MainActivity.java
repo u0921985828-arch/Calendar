@@ -25,6 +25,7 @@ import androidx.webkit.WebViewFeature;
 public class MainActivity extends Activity {
 
     private WebView web;
+    private boolean triedFileFallback = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +62,17 @@ public class MainActivity extends Activity {
                     }
                 } catch (Throwable ignored) { }
                 Log.e("NEUROFLOW_LOAD_ERROR", info);
+                // Fallback a prueba de fallos: si appassets no sirve la app en este
+                // dispositivo, cargarla desde los assets por file:// para que la app
+                // ABRA igualmente (en ese modo, sin contexto seguro, no hay cifrado).
+                if (!triedFileFallback) {
+                    triedFileFallback = true;
+                    view.post(new Runnable() {
+                        @Override public void run() {
+                            web.loadUrl("file:///android_asset/index.html");
+                        }
+                    });
+                }
             }
 
             @Override

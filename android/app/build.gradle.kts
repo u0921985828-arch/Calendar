@@ -14,7 +14,25 @@ android {
         versionName = "1.0"
     }
 
+    // Clave debug FIJA y versionada: así todas las compilaciones (locales y de CI)
+    // comparten firma y Android permite actualizar el APK encima sin desinstalar.
+    // Una clave debug no es secreta; contraseñas estándar de Android.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+    }
+
     buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         getByName("release") {
             isMinifyEnabled = false
         }
