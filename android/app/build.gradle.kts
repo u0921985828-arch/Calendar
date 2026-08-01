@@ -10,8 +10,11 @@ android {
         applicationId = "com.neuroflow.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        // versionCode creciente: en CI lo inyecta el run number (NF_VERSION_CODE),
+        // así cada build es una actualización válida y se instala encima sin
+        // desinstalar. En local queda en 1.
+        versionCode = System.getenv("NF_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = "1.0.${System.getenv("NF_VERSION_CODE") ?: "0"}"
     }
 
     // Clave debug FIJA y versionada: así todas las compilaciones (locales y de CI)
