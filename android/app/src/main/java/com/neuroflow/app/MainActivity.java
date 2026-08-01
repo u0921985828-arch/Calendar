@@ -7,13 +7,11 @@ import android.view.KeyEvent;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 import androidx.annotation.NonNull;
 import androidx.webkit.WebResourceErrorCompat;
-import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 import androidx.webkit.WebViewFeature;
 
@@ -25,16 +23,10 @@ import androidx.webkit.WebViewFeature;
 public class MainActivity extends Activity {
 
     private WebView web;
-    private boolean triedFileFallback = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
-                .setDomain("appassets.androidx.org")
-                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-                .build();
 
         web = new WebView(this);
         WebSettings s = web.getSettings();
@@ -44,16 +36,12 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);
         s.setAllowContentAccess(true);
 
+        // Registra en logcat los errores de carga del frame principal y reenvía los
+        // console.* (permite verificar en CI que la web app arranca de verdad).
         web.setWebViewClient(new WebViewClientCompat() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return loader.shouldInterceptRequest(request.getUrl());
-            }
-
             @Override
             public void onReceivedError(@NonNull WebView view, @NonNull WebResourceRequest request,
                                         @NonNull WebResourceErrorCompat error) {
-                // Solo importa el fallo del documento principal (la app en sí).
                 if (!request.isForMainFrame()) return;
                 String info = "url=" + request.getUrl();
                 try {
@@ -62,30 +50,9 @@ public class MainActivity extends Activity {
                     }
                 } catch (Throwable ignored) { }
                 Log.e("NEUROFLOW_LOAD_ERROR", info);
-                // Fallback a prueba de fallos: si appassets no sirve la app en este
-                // dispositivo, cargarla desde los assets por file:// para que la app
-                // ABRA igualmente (en ese modo, sin contexto seguro, no hay cifrado).
-                if (!triedFileFallback) {
-                    triedFileFallback = true;
-                    view.post(new Runnable() {
-                        @Override public void run() {
-                            web.loadUrl("file:///android_asset/index.html");
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onReceivedHttpError(WebView view, WebResourceRequest request,
-                                            WebResourceResponse errorResponse) {
-                if (request.isForMainFrame()) {
-                    Log.e("NEUROFLOW_HTTP_ERROR", "status=" + errorResponse.getStatusCode()
-                            + " url=" + request.getUrl());
-                }
             }
         });
 
-        // Reenvía los console.* de la web app a logcat: permite verificar el arranque real.
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage m) {
@@ -95,7 +62,11 @@ public class MainActivity extends Activity {
         });
 
         setContentView(web);
-        web.loadUrl("https://appassets.androidx.org/assets/index.html");
+        // Carga la web app DIRECTAMENTE desde los assets del APK. Es la vía más
+        // robusta: funciona en cualquier WebView, sin interceptores que fallen.
+        // Nota: file:// no es contexto seguro; si WebCrypto no está disponible la
+        // app arranca sin cifrado (tiene ese modo de reserva integrado).
+        web.loadUrl("file:///android_asset/index.html");
     }
 
     @Override
