@@ -52,9 +52,6 @@
   .icon-btn{border:1px solid var(--ink);background:var(--paper);width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:none;}
   .icon-btn:active{background:var(--cement);}
 
-  .disclaimer{flex:none;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:11px;line-height:1.5;padding:8px 14px;display:flex;gap:8px;align-items:center;}
-  .disclaimer b{color:var(--signal);}
-  .disclaimer button{margin-left:auto;border:1px solid var(--paper);background:transparent;color:var(--paper);font-family:var(--mono);font-size:10px;text-transform:uppercase;padding:2px 6px;white-space:nowrap;}
 
   .screen{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:14px 14px 26px;}
 
@@ -87,7 +84,6 @@
   .cal-cell.sel{outline:3px solid var(--focus);outline-offset:-3px;}
   .cal-items{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .cal-chip{font-family:var(--mono);font-size:8.5px;line-height:1.25;padding:1px 2px 1px 4px;border-left:3px solid var(--focus);background:var(--cement);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .cal-chip.med{border-left-color:var(--alert);}
   .cal-chip.task{border-left-color:var(--action);}
   .cal-chip.done{opacity:.45;text-decoration:line-through;}
   .cal-more{font-family:var(--mono);font-size:8.5px;color:rgba(var(--ink-rgb),.55);padding-left:2px;}
@@ -124,7 +120,6 @@
   .sec-empty{font-family:var(--mono);font-size:11px;text-transform:uppercase;color:rgba(var(--ink-rgb),.3);padding:10px 0;}
 
   .ev{border:1px solid var(--ink);border-left:5px solid var(--focus);background:var(--paper);padding:10px 12px;display:flex;align-items:center;gap:10px;margin-top:8px;}
-  .ev.med{border-left-color:var(--alert);}
   .ev .time{font-family:var(--mono);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;}
   .ev .body{flex:1;min-width:0;}
   .ev .lbl{font-weight:700;font-size:14px;}
@@ -173,7 +168,6 @@
   .wk-row{font-family:var(--mono);font-size:12px;display:flex;gap:8px;align-items:baseline;}
   .wk-row .wt{font-weight:700;font-variant-numeric:tabular-nums;color:rgba(var(--ink-rgb),.7);min-width:38px;}
   .wk-row .wl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .wk-row.med .wt{color:var(--alert);}
   .wk-row.task .wt{color:rgba(var(--ink-rgb),.4);}
   .wk-empty{font-family:var(--mono);font-size:11px;color:rgba(var(--ink-rgb),.35);text-transform:uppercase;margin-top:6px;}
 
@@ -271,7 +265,6 @@
   .tl-now{position:absolute;left:40px;right:0;height:0;border-top:2px solid var(--alert);z-index:4;}
   .tl-b{position:absolute;border:1px solid var(--ink);background:var(--paper);overflow:hidden;padding:2px 5px;z-index:2;cursor:pointer;}
   .tl-b.ev{border-left:4px solid var(--focus);}
-  .tl-b.ev.med{border-left-color:var(--alert);}
   .tl-b.task{background:var(--cement);border-left:4px solid var(--action);}
   .tl-b.done{opacity:.5;}
   .tl-b .tl-t{font-family:var(--mono);font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -342,10 +335,6 @@
     <div class="brand">Neuroflow<small>Calendario para tu cabeza</small></div>
     <button class="icon-btn" id="gearBtn" aria-label="Ajustes">⚙</button>
   </div>
-  <div class="disclaimer" id="disclaimer">
-    <span>⚠ <b>No es un dispositivo médico</b>. No sustituye tratamiento.</span>
-    <button id="discOk">Ok</button>
-  </div>
   <div class="screen" id="screen" role="tabpanel"></div>
   <button class="fab" id="fab" aria-label="Añadir">+</button>
   <nav class="tabbar" role="tablist" aria-label="Secciones">
@@ -405,7 +394,7 @@
     <div class="set-row"><div class="srl">Tema<small>Claro / oscuro / según el sistema</small></div><button class="switch" id="stTheme">Sistema</button></div>
     <div class="set-row"><div class="srl">Auto-bloqueo<small>Cifra al salir o tras inactividad</small></div><button class="switch" id="stAutolock">5 min</button></div>
 
-    <button class="set-btn" id="stMed" style="margin-top:14px"><span>Añadir evento</span><span>+</span></button>
+    <button class="set-btn" id="stAddEvent" style="margin-top:14px"><span>Añadir evento</span><span>+</span></button>
     <button class="set-btn" id="stTrash"><span>Papelera</span><span>🗑</span></button>
     <button class="set-btn" id="stArchive"><span>Archivadas</span><span>▤</span></button>
     <button class="set-btn" id="stExport"><span>Exportar a calendario (.ics)</span><span>↧</span></button>
@@ -415,7 +404,6 @@
     <button class="set-btn" id="stCloud"><span>IA en la nube (opcional)</span><span>☁</span></button>
     <button class="set-btn" id="stLock"><span>Bloquear ahora</span><span>⧉</span></button>
     <button class="set-btn" id="stEvidence"><span>Evidencia y por qué</span><span>❋</span></button>
-    <button class="set-btn" id="stDisc"><span>Ver aviso médico</span><span>⚠</span></button>
     <button class="set-btn danger" id="stReset"><span>Empezar de cero</span><span>↺</span></button>
     <button class="alt" id="stCancel">Cerrar</button>
     <input type="file" id="icsFile" accept=".ics,text/calendar" style="display:none" aria-hidden="true" />
@@ -590,8 +578,8 @@
   // Hace operable por teclado cualquier elemento no-nativo (Enter/Espacio) + click.
   function activable(elem,fn,label){elem.setAttribute("role","button");if(!elem.hasAttribute("tabindex"))elem.setAttribute("tabindex","0");if(label)elem.setAttribute("aria-label",label);elem.addEventListener("click",fn);elem.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "||e.key==="Spacebar"){e.preventDefault();fn(e);}});return elem;}
   // Marcador redundante (glifo + texto) por tipo, para no depender solo del color.
-  function typeMark(kind){return kind==="medicacion"||kind==="med"?"✚":kind==="task"||kind==="tarea"?"▸":"◆";}
-  function typeName(kind){return kind==="medicacion"||kind==="med"?"Medicación":kind==="task"||kind==="tarea"?"Tarea":"Cita";}
+  function typeMark(kind){return kind==="task"||kind==="tarea"?"▸":"◆";}
+  function typeName(kind){return kind==="task"||kind==="tarea"?"Tarea":"Cita";}
   // Dictado por voz (Web Speech API) — feature-detect; se oculta si no existe.
   function hasSpeech(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
   var speechRec=null;
@@ -848,7 +836,6 @@
       field(body,"Hora",draft.time,function(v){draft.time=v;},"time");
       field(body,"Fecha",draft.date,function(v){draft.date=v;},"date");
       seg(body,"Repetir",[{v:"none",t:"No"},{v:"daily",t:"Cada día"},{v:"weekly",t:"Cada semana"}],draft.repeat||"none",function(v){draft.repeat=v;});
-      seg(body,"Tipo",[{v:"cita",t:"Cita / reunión"},{v:"medicacion",t:"Medicación"}],draft.kind,function(v){draft.kind=v;});
     }
     var foot=$("#editorFoot");foot.innerHTML="";
     var s1=el("button","save",isNew?"Añadir":"Guardar");s1.onclick=function(){commitEditor(type,isNew,draft,obj);};foot.appendChild(s1);
@@ -909,9 +896,9 @@
     card.appendChild(foot);return card;
   }
   function eventRow(ev){
-    var row=el("div","ev"+(ev.kind==="medicacion"?" med":""));
+    var row=el("div","ev");
     row.appendChild(el("span","time",ev.time));
-    var body=el("div","body");body.appendChild(el("div","lbl",(ev.kind==="medicacion"?"💊 ":"")+ev.label));body.appendChild(el("div","kind",ev.kind==="medicacion"?"Medicación":"Cita"));
+    var body=el("div","body");body.appendChild(el("div","lbl",ev.label));body.appendChild(el("div","kind","Cita"));
     row.appendChild(body);
     var edit=el("button","mini-btn","✎");edit.setAttribute("aria-label","Editar evento");edit.onclick=function(){openEditor("event",ev);};row.appendChild(edit);
     return row;
@@ -946,7 +933,7 @@
   // ---------- MES ----------
   function itemsForDay(ds){
     var out=[];
-    eventsOn(ds).sort(function(a,b){return a.time<b.time?-1:1;}).forEach(function(e){out.push({kind:e.kind==="medicacion"?"med":"ev",label:e.time+" "+e.label});});
+    eventsOn(ds).sort(function(a,b){return a.time<b.time?-1:1;}).forEach(function(e){out.push({kind:"ev",label:e.time+" "+e.label});});
     tasks.filter(function(t){return t.date===ds;}).forEach(function(t){out.push({kind:"task",label:t.title,done:t.status==="hecha"});});
     return out;
   }
@@ -980,7 +967,7 @@
     }
     sc.appendChild(grid);
     var lg=el("div","cal-legend");
-    [["ev","◆ Citas"],["med","✚ Medicación"],["task","▸ Tareas"]].forEach(function(o){var s=el("span");var ic=el("i");ic.style.borderColor=o[0]==="ev"?"var(--focus)":o[0]==="med"?"var(--alert)":"var(--action)";s.appendChild(ic);s.appendChild(document.createTextNode(o[1]));lg.appendChild(s);});
+    [["ev","◆ Citas"],["task","▸ Tareas"]].forEach(function(o){var s=el("span");var ic=el("i");ic.style.borderColor=o[0]==="ev"?"var(--focus)":"var(--action)";s.appendChild(ic);s.appendChild(document.createTextNode(o[1]));lg.appendChild(s);});
     sc.appendChild(lg);
   }
 
@@ -1003,7 +990,7 @@
       top.appendChild(nm);top.appendChild(el("span","cnt",evs.length+" ev · "+tks.filter(function(t){return t.status!=="hecha";}).length+" tar"));card.appendChild(top);
       if(evs.length||tks.length){
         var lst=el("div","wk-list");lst.setAttribute("role","list");
-        evs.forEach(function(e){var row=el("div","wk-row"+(e.kind==="medicacion"?" med":""));row.setAttribute("role","listitem");row.appendChild(el("span","wt",e.time));var wl=el("span","wl");wl.appendChild(el("i","tmark",typeMark(e.kind)));wl.appendChild(document.createTextNode(" "+e.label));row.appendChild(wl);lst.appendChild(row);});
+        evs.forEach(function(e){var row=el("div","wk-row");row.setAttribute("role","listitem");row.appendChild(el("span","wt",e.time));var wl=el("span","wl");wl.appendChild(el("i","tmark","◆"));wl.appendChild(document.createTextNode(" "+e.label));row.appendChild(wl);lst.appendChild(row);});
         tks.forEach(function(t){var row=el("div","wk-row task");row.setAttribute("role","listitem");row.appendChild(el("span","wt","▸"));row.appendChild(el("span","wl",t.title));if(t.status==="hecha")row.style.opacity=".5";lst.appendChild(row);});
         card.appendChild(lst);
       } else card.appendChild(el("div","wk-empty","día libre"));
@@ -1088,13 +1075,12 @@
     // pintar bloques
     items.forEach(function(it){
       var frac=it.col/it.ncol;
-      var evMed=it.kind==="ev"&&it.ref.kind==="medicacion";
-      var mark=typeMark(it.kind==="ev"?(evMed?"med":"ev"):"task");
-      var b=el("div","tl-b "+(it.kind==="ev"?(evMed?"ev med":"ev"):"task")+(it.kind==="task"&&it.ref.status==="hecha"?" done":""));
+      var mark=typeMark(it.kind==="ev"?"ev":"task");
+      var b=el("div","tl-b "+(it.kind==="ev"?"ev":"task")+(it.kind==="task"&&it.ref.status==="hecha"?" done":""));
       b.style.top=(it.s*PXMIN)+"px";b.style.height=Math.max(it.kind==="task"?32:22,(it.e-it.s)*PXMIN-2)+"px";
       b.style.left="calc(44px + "+frac+" * (100% - 44px))";b.style.width="calc((100% - 44px) / "+it.ncol+" - 3px)";
       var t1=el("div","tl-t");
-      if(it.kind==="ev"){t1.textContent=mark+" "+it.ref.time+"  "+it.ref.label;b.appendChild(t1);activable(b,function(ev){ev&&ev.stopPropagation();openEditor("event",it.ref);},typeName(evMed?"med":"ev")+" "+it.ref.time+" "+it.ref.label);}
+      if(it.kind==="ev"){t1.textContent=mark+" "+it.ref.time+"  "+it.ref.label;b.appendChild(t1);activable(b,function(ev){ev&&ev.stopPropagation();openEditor("event",it.ref);},"Cita "+it.ref.time+" "+it.ref.label);}
       else{t1.textContent=mark+" "+minToHM(it.s)+"–"+minToHM(it.e)+"  ·  "+it.dur+"m";b.appendChild(t1);b.appendChild(el("div","tl-n",it.ref.title));activable(b,function(ev){ev&&ev.stopPropagation();openTaskSheet(it.ref.id);},"Tarea "+it.ref.title+", "+minToHM(it.s)+" a "+minToHM(it.e));}
       grid.appendChild(b);
     });
@@ -1220,7 +1206,6 @@
   function boot(){
     closeSheet("#vault");closeSheet("#recShow");
     applyTheme();purgeTrash();
-    if(LS.getItem("nf_disc"))$("#disclaimer").style.display="none";
     var hash=(location.hash||"").replace("#","");if(RENDER[hash])activeTab=hash;
     renderActive();armAutolock();
     if(activeTab==="captura"){var di=$("#dumpInput");if(di)setTimeout(function(){di.focus();},60);}
@@ -1284,17 +1269,15 @@
   document.querySelectorAll(".tab").forEach(function(b){b.addEventListener("click",function(){setTab(b.getAttribute("data-tab"));});});
   $("#fab").addEventListener("click",function(){openChooser();});
   $("#gearBtn").addEventListener("click",function(){openSheet("#settings");});
-  $("#discOk").addEventListener("click",function(){$("#disclaimer").style.display="none";try{LS.setItem("nf_disc","1");}catch(e){}});
   $("#chTask").addEventListener("click",function(){closeSheet("#chooser");openEditor("task",null);});
   $("#chEvent").addEventListener("click",function(){closeSheet("#chooser");openEditor("event",null);});
   $("#chCancel").addEventListener("click",function(){closeSheet("#chooser");});
-  $("#stMed").addEventListener("click",function(){closeSheet("#settings");openEditor("event",null);});
+  $("#stAddEvent").addEventListener("click",function(){closeSheet("#settings");openEditor("event",null);});
   $("#stExport").addEventListener("click",function(){if(!events.length&&!tasks.length){alert("Aún no hay nada que exportar.");return;}exportICS();});
   $("#stImport").addEventListener("click",function(){$("#icsFile").click();});
   $("#icsFile").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var n=importICS(String(rd.result));closeSheet("#settings");alert(n?("Importados "+n+" elementos."):"No se encontraron eventos en el archivo.");}catch(err){alert("No se pudo leer el archivo .ics.");}};rd.readAsText(f);e.target.value="";});
   $("#stLock").addEventListener("click",function(){closeSheet("#settings");if(masterKey)lockNow();else location.reload();});
-  $("#stDisc").addEventListener("click",function(){closeSheet("#settings");$("#disclaimer").style.display="flex";});
-  $("#stReset").addEventListener("click",function(){if(confirm("¿Borrar todos los datos de este dispositivo?")){["nf_vault","nf_salt","nf_wrap_pass","nf_wrap_rec","nf_onb","nf_disc"].forEach(function(k){LS.removeItem(k);});location.reload();}});
+  $("#stReset").addEventListener("click",function(){if(confirm("¿Borrar todos los datos de este dispositivo?")){["nf_vault","nf_salt","nf_wrap_pass","nf_wrap_rec","nf_onb"].forEach(function(k){LS.removeItem(k);});location.reload();}});
   $("#stTheme").addEventListener("click",cycleTheme);
   $("#stAutolock").addEventListener("click",cycleAutolock);
   $("#stTrash").addEventListener("click",function(){closeSheet("#settings");openList("trash");});
@@ -1303,7 +1286,7 @@
   $("#stRestore").addEventListener("click",function(){$("#bakFile").click();});
   $("#bakFile").addEventListener("change",function(e){var f=e.target.files&&e.target.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){importBackup(String(rd.result));};rd.readAsText(f);e.target.value="";});
   $("#stCloud").addEventListener("click",function(){closeSheet("#settings");openCloud();});
-  $("#stEvidence").addEventListener("click",function(){closeSheet("#settings");alert("Neuroflow se apoya en evidencia sobre función ejecutiva y TDAH:\n\n· Externalizar el tiempo (ceguera temporal, Barkley): el día por horas.\n· Intención de implementación (Gollwitzer): el campo \"si/entonces\".\n· Falacia de planificación (Kahneman): calibración de estimaciones.\n· Descargar la memoria (efecto Zeigarnik): captura rápida.\n· Menos es más (sobrecarga de elección, Iyengar): presupuesto diario.\n\nNo es un dispositivo médico ni sustituye atención profesional.");});
+  $("#stEvidence").addEventListener("click",function(){closeSheet("#settings");alert("Neuroflow se apoya en evidencia sobre función ejecutiva y TDAH:\n\n· Externalizar el tiempo (ceguera temporal, Barkley): el día por horas.\n· Intención de implementación (Gollwitzer): el campo \"si/entonces\".\n· Falacia de planificación (Kahneman): calibración de estimaciones.\n· Descargar la memoria (efecto Zeigarnik): captura rápida.\n· Menos es más (sobrecarga de elección, Iyengar): presupuesto diario.");});
   $("#listClose").addEventListener("click",function(){closeSheet("#listSheet");});
   $("#clClose").addEventListener("click",function(){closeSheet("#cloud");});
   $("#stCancel").addEventListener("click",function(){closeSheet("#settings");});

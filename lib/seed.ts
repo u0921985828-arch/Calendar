@@ -57,12 +57,10 @@ export const SEED_TASKS: Task[] = [
   },
 ];
 
-/** Citas y medicacion con hora fija: la excepcion que si necesita reloj. */
+/** Citas con hora fija: la excepcion que si necesita reloj. */
 export const SEED_ANCHORS: Anchor[] = [
   { id: "a1", day: 2, time: "09:30", label: "Dentista", kind: "cita" },
   { id: "a2", day: 2, time: "16:00", label: "Reunion de equipo", kind: "cita" },
-  { id: "m1", day: 2, time: "08:00", label: "Metilfenidato", kind: "medicacion" },
-  { id: "m2", day: 2, time: "14:00", label: "2a toma", kind: "medicacion" },
   { id: "a3", day: 3, time: "11:00", label: "Llamada cliente Nordvik", kind: "cita" },
 ];
 

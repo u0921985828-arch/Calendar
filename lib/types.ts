@@ -43,13 +43,12 @@ export interface Task {
   isRoutine?: boolean;
 }
 
-/** Tipo de ancla. La medicacion se trata aparte (recordatorio clinico). */
-export type AnchorKind = "cita" | "medicacion";
+/** Tipo de ancla. */
+export type AnchorKind = "cita";
 
 /**
- * ANCLA: la EXCEPCION con hora fija. Citas, reuniones, tomas de medicacion:
- * lo unico que de verdad necesita reloj. Convive con el time-blocking por
- * fases sin contaminarlo.
+ * ANCLA: la EXCEPCION con hora fija. Citas y reuniones: lo unico que de verdad
+ * necesita reloj. Convive con el time-blocking por fases sin contaminarlo.
  */
 export interface Anchor {
   id: string;
@@ -76,8 +75,8 @@ export interface FocusSession {
 
 export interface SoftNudge {
   atMin: number;
-  /** `vital` marca cuidado basico (comida/medicacion): no descartable a la ligera. */
-  kind: "hidratacion" | "postura" | "vista" | "respiracion" | "comida" | "medicacion";
+  /** `vital` marca cuidado basico (comida/descanso): no descartable a la ligera. */
+  kind: "hidratacion" | "postura" | "vista" | "respiracion" | "comida" | "descanso";
   label: string;
   vital?: boolean;
 }
