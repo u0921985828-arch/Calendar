@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Entrena un motor de desglose por RECUPERACION (TF-IDF + vecino mas cercano).
+# Entrena un motor de desglose por RECUPERACION (TF-IDF + vecino mas cercano)
+# con expansion de SINONIMOS y respaldo por TRIGRAMAS de caracteres.
 # Salida: model.json  -> se incrusta en la app y la inferencia corre en JS.
 import unicodedata, re, json, math
 
@@ -8,8 +9,61 @@ STOP = set("de la el los las un una unos unas y o u a e en con por para que se s
            "esto ese esa eso como cuando donde sin sobre entre hasta desde ya no si mismo cada "
            "hacer poner tener dar ir cosa cosas algo tengo quiero necesito".split())
 
+# Mapa de sinonimos/lemas: la clave y todos sus valores se colapsan al lema canonico
+# (la clave), tanto al entrenar como al inferir. Reduce el vocabulario y hace que
+# fraseos coloquiales caigan en el mismo intent. Todo en minusculas y sin acentos.
+SYN_GROUPS = {
+ "ropa":     ["colada","lavadora","prendas","camisas","camisetas","pantalones","calcetines"],
+ "movil":    ["telefono","celular","smartphone","iphone","android"],
+ "coche":    ["auto","automovil","vehiculo","carro"],
+ "comprar":  ["adquirir","pillar","conseguir","mercar"],
+ "arreglar": ["reparar","apanar","solucionar","corregir"],
+ "limpiar":  ["fregar","asear","adecentar","fregoteo"],
+ "ordenar":  ["organizar","recoger","despejar","clasificar"],
+ "cocinar":  ["guisar","preparar","hacer"],
+ "estudiar": ["repasar","empollar","estudio","aprender"],
+ "correo":   ["email","mail","emails","correos","mails"],
+ "llamar":   ["telefonear","llamada"],
+ "medico":   ["doctor","consulta"],
+ "dinero":   ["pasta","euros","importe","pago","factura","recibo"],
+ "cita":     ["reserva","turno","hora"],
+ "documento":["papeles","papeleo","formulario","impreso"],
+ "casa":     ["hogar","piso","apartamento","vivienda"],
+ "basura":   ["reciclaje","desperdicios","residuos"],
+ "perro":    ["mascota","can","chucho"],
+ "nino":     ["hijo","peque","cria","criatura"],
+ "trabajo":  ["curro","empleo","chamba","laburo"],
+ "reunion":  ["meeting","junta"],
+ "ejercicio":["deporte","entrenar","entreno","gym","gimnasio","correr","trotar","running"],
+ "comida":   ["almuerzo","cena","desayuno","comer"],
+ "viaje":    ["vacaciones","escapada","excursion"],
+ "regalo":   ["obsequio","detalle","presente"],
+ "jardin":   ["huerto","terraza","plantas","macetas"],
+ "cuenta":   ["factura","recibo"],
+}
 def strip_accents(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+
+# Stem ligero: quita pronombre enclitico sobre infinitivo (plancharme->planchar,
+# acostarse->acostar) y luego el plural. El guardado ar/er/ir evita cortar palabras
+# normales (clase, aceite, informe...).
+def _stem(t):
+    for suf in ('nos', 'les', 'me', 'te', 'se', 'le', 'os'):
+        if len(t) > len(suf) + 3 and t.endswith(suf):
+            b = t[:-len(suf)]
+            if b.endswith(('ar', 'er', 'ir')):
+                t = b
+                break
+    if len(t) > 5 and t.endswith('es'): return t[:-2]
+    if len(t) > 4 and t.endswith('s'): return t[:-1]
+    return t
+
+# Construye el mapa de lemas ya normalizado (sin acentos + stem ligero).
+SYN = {}
+for canon, alts in SYN_GROUPS.items():
+    c = _stem(strip_accents(canon.lower()))
+    for a in [canon] + alts:
+        SYN[_stem(strip_accents(a.lower()))] = c
 
 def tokenize(s):
     s = strip_accents(s.lower())
@@ -17,10 +71,18 @@ def tokenize(s):
     for t in re.split(r'[^a-z0-9]+', s):
         if len(t) < 2 or t in STOP:
             continue
-        if len(t) > 5 and t.endswith('es'): t = t[:-2]
-        elif len(t) > 4 and t.endswith('s'): t = t[:-1]
+        t = _stem(t)
+        t = SYN.get(t, t)        # colapsa sinonimos al lema canonico
+        if not t or t in STOP:
+            continue
         out.append(t)
     return out
+
+def trigrams(s):
+    s = strip_accents(s.lower())
+    s = re.sub(r'[^a-z0-9]+', ' ', s).strip()
+    s = ' ' + s + ' '
+    return set(s[i:i+3] for i in range(len(s) - 2))
 
 # intent: {ex:[frases], steps:[[label, est_min], ...]}   (%s = objeto de la tarea)
 INTENTS = {
@@ -72,10 +134,28 @@ try:
 except ImportError:
     pass
 
-docs = []  # (intent, tokens)
+# Frases de ejemplo por intent (texto crudo, deduplicado y normalizado ligero).
+# La app las tokeniza y vectoriza en el arranque con el mismo idf: asi el modelo
+# guarda TEXTO (compacto) y ademas sirve para el respaldo por trigramas gratis,
+# en vez de guardar miles de vectores y perfiles de trigramas por separado.
+def norm_phrase(s):
+    return re.sub(r'\s+', ' ', s.strip().lower())
+
+docs = []  # (intent, tokens) solo para calcular idf
+phrases = []  # [intent, frase]
+seen = set()
 for intent, d in INTENTS.items():
     for ex in d["ex"]:
-        docs.append((intent, tokenize(ex)))
+        p = norm_phrase(ex)
+        key = (intent, p)
+        if not p or key in seen:
+            continue
+        seen.add(key)
+        toks = tokenize(ex)
+        if not toks:
+            continue
+        docs.append((intent, toks))
+        phrases.append([intent, p])
 
 df = {}
 for _, toks in docs:
@@ -84,19 +164,14 @@ for _, toks in docs:
 N = len(docs)
 idf = {t: round(math.log((N + 1) / (c + 1)) + 1, 5) for t, c in df.items()}
 
-def vec(toks):
-    tf = {}
-    for t in toks:
-        if t in idf:
-            tf[t] = tf.get(t, 0) + 1
-    v = {t: tf[t] * idf[t] for t in tf}
-    norm = math.sqrt(sum(x * x for x in v.values())) or 1.0
-    return {t: round(x / norm, 5) for t, x in v.items()}
-
-ex_vecs = [[intent, vec(toks)] for intent, toks in docs]
 recipes = {intent: {"steps": d["steps"]} for intent, d in INTENTS.items()}
 
-model = {"idf": idf, "ex": ex_vecs, "recipes": recipes}
+# Mapa de sinonimos exportado (token normalizado -> lema) para replicar el
+# colapsado en el tokenizador de JS. Solo entradas que cambian el token.
+syn_out = {k: v for k, v in SYN.items() if k != v}
+
+model = {"idf": idf, "ph": phrases, "recipes": recipes, "syn": syn_out}
 json.dump(model, open("model.json", "w"), ensure_ascii=False, separators=(",", ":"))
-print("intents:", len(INTENTS), "docs:", N, "vocab:", len(idf))
+print("intents:", len(INTENTS), "docs:", N, "vocab:", len(idf),
+      "phrases:", len(phrases), "syn:", len(syn_out))
 print("model.json bytes:", len(open("model.json", "rb").read()))
