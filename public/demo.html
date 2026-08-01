@@ -305,8 +305,8 @@
   /* Marcador de tipo (color + forma redundante) */
   .tmark{font-family:var(--mono);font-weight:700;font-style:normal;margin-right:3px;}
 
-  /* Botón de dictado por voz */
-  .mic{flex:none;border:1px solid var(--ink);background:var(--paper);width:46px;font-size:18px;}
+  /* Botón de dictado por voz (texto, sin emoji) */
+  .mic{flex:none;border:1px solid var(--ink);background:var(--paper);width:auto;padding:0 14px;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
   .mic.rec{background:var(--alert);color:#fff;}
   .cap-row{display:flex;gap:8px;}
   .cap-row input{flex:1;min-width:0;}
@@ -350,7 +350,7 @@
 <div class="app" id="app">
   <div class="appbar">
     <div class="brand">Neuroflow<small>Calendario para tu cabeza</small></div>
-    <button class="icon-btn" id="gearBtn" aria-label="Ajustes">⚙</button>
+    <button class="icon-btn" id="gearBtn" aria-label="Ajustes">⚙︎</button>
   </div>
   <div class="screen" id="screen" role="tabpanel"></div>
   <button class="fab" id="fab" aria-label="Añadir">+</button>
@@ -412,13 +412,13 @@
     <div class="set-row"><div class="srl">Auto-bloqueo<small>Cifra al salir o tras inactividad</small></div><button class="switch" id="stAutolock">5 min</button></div>
 
     <button class="set-btn" id="stAddEvent" style="margin-top:14px"><span>Añadir evento</span><span>+</span></button>
-    <button class="set-btn" id="stTrash"><span>Papelera</span><span>🗑</span></button>
+    <button class="set-btn" id="stTrash"><span>Papelera</span><span>✕</span></button>
     <button class="set-btn" id="stArchive"><span>Archivadas</span><span>▤</span></button>
     <button class="set-btn" id="stExport"><span>Exportar a calendario (.ics)</span><span>↧</span></button>
     <button class="set-btn" id="stImport"><span>Importar de calendario (.ics)</span><span>↥</span></button>
     <button class="set-btn" id="stBackup"><span>Copia de seguridad cifrada</span><span>⤓</span></button>
     <button class="set-btn" id="stRestore"><span>Restaurar copia cifrada</span><span>⤒</span></button>
-    <button class="set-btn" id="stCloud"><span>IA en la nube (opcional)</span><span>☁</span></button>
+    <button class="set-btn" id="stCloud"><span>IA en la nube (opcional)</span><span>☁︎</span></button>
     <button class="set-btn" id="stLock"><span>Bloquear ahora</span><span>⧉</span></button>
     <button class="set-btn" id="stEvidence"><span>Evidencia y por qué</span><span>❋</span></button>
     <button class="set-btn danger" id="stReset"><span>Empezar de cero</span><span>↺</span></button>
@@ -597,18 +597,25 @@
   // Marcador redundante (glifo + texto) por tipo, para no depender solo del color.
   function typeMark(kind){return kind==="task"||kind==="tarea"?"▸":"◆";}
   function typeName(kind){return kind==="task"||kind==="tarea"?"Tarea":"Cita";}
-  // Dictado por voz (Web Speech API) — feature-detect; se oculta si no existe.
+  // Dictado por voz (Web Speech API). Solo se ofrece donde puede funcionar de verdad:
+  // NO en la APK (WebView del sistema, esquema file://, sin reconocimiento de voz).
+  // Si el permiso/servicio falla en tiempo real, se marca roto y se retira el botón.
+  var speechRec=null,speechBroken=false;
   function hasSpeech(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
-  var speechRec=null;
+  function canDictate(){return hasSpeech()&&!speechBroken&&location.protocol!=="file:";}
+  function setMicLabel(btn,txt){btn.textContent=txt;}
   function attachSpeech(btn,target){
+    var idle=btn.textContent||"Dictar";
     btn.onclick=function(){
       var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;
-      if(speechRec){try{speechRec.stop();}catch(e){}speechRec=null;btn.classList.remove("rec");return;}
+      if(speechRec){try{speechRec.stop();}catch(e){}speechRec=null;btn.classList.remove("rec");setMicLabel(btn,idle);return;}
       var r=new SR();r.lang="es-ES";r.interimResults=false;r.maxAlternatives=1;
       r.onresult=function(ev){var txt=ev.results[0][0].transcript;target.value=(target.value?target.value+" ":"")+txt;target.dispatchEvent(new Event("input"));};
-      r.onerror=function(){announce("No se pudo escuchar");};
-      r.onend=function(){btn.classList.remove("rec");speechRec=null;};
-      speechRec=r;btn.classList.add("rec");announce("Escuchando…");try{r.start();}catch(e){btn.classList.remove("rec");speechRec=null;}
+      r.onerror=function(ev){var e=ev&&ev.error;btn.classList.remove("rec");setMicLabel(btn,idle);speechRec=null;
+        if(e==="not-allowed"||e==="service-not-allowed"||e==="audio-capture"||e==="network"){speechBroken=true;announce("El dictado no está disponible aquí");if(btn.parentNode)btn.parentNode.removeChild(btn);}
+        else announce("No se pudo escuchar");};
+      r.onend=function(){btn.classList.remove("rec");setMicLabel(btn,idle);speechRec=null;};
+      speechRec=r;btn.classList.add("rec");setMicLabel(btn,"Escuchando…");announce("Escuchando…");try{r.start();}catch(e){btn.classList.remove("rec");setMicLabel(btn,idle);speechRec=null;}
     };
   }
   function pad(n){return (n<10?"0":"")+n;}
@@ -919,7 +926,7 @@
     if(type==="task"){
       draft=isNew?Object.assign({id:id("task"),title:"",status:"planificada",energy:"media",phase:"meseta",date:selDate,time:"",steps:[]},pre||{}):JSON.parse(JSON.stringify(obj));
       first=field(body,"Título",draft.title,function(v){draft.title=v;});
-      if(hasSpeech()){var mt=el("button","mic","🎤");mt.type="button";mt.setAttribute("aria-label","Dictar título");mt.style.cssText="width:auto;padding:6px 12px;margin-top:6px";attachSpeech(mt,first);first.parentNode.appendChild(mt);}
+      if(canDictate()){var mt=el("button","mic","Dictar");mt.type="button";mt.setAttribute("aria-label","Dictar título");mt.style.cssText="margin-top:6px";attachSpeech(mt,first);first.parentNode.appendChild(mt);}
       seg(body,"¿Cuánta energía pide?",[{v:"alta",t:"Alta"},{v:"media",t:"Media"},{v:"baja",t:"Baja"}],draft.energy,function(v){draft.energy=v;});
       field(body,"Hora (opcional)",draft.time||"",function(v){draft.time=v;},"time");
       var cf=field(body,"Si… (cuándo/dónde lo harás)",draft.cue||"",function(v){draft.cue=v;});cf.placeholder="termino de comer, en el escritorio…";cf.type="text";
@@ -1140,7 +1147,7 @@
       eventsOn(selDate).forEach(function(e){var s=hmToMin(e.time);if(s!=null&&s-nowM>0&&s-nowM<=15)soon.push({s:s,label:e.label});});
       tasks.filter(function(t){return t.date===selDate&&t.time&&t.status!=="hecha";}).forEach(function(t){var s=hmToMin(t.time);if(s!=null&&s-nowM>0&&s-nowM<=15)soon.push({s:s,label:t.title});});
       soon.sort(function(a,b){return a.s-b.s;});
-      if(soon.length){var pb=el("div","prep");pb.appendChild(el("span",null,"⏱"));pb.appendChild(el("span",null,"Prepárate: "+soon[0].label+" en "+(soon[0].s-nowM)+" min"));sc.appendChild(pb);}
+      if(soon.length){var pb=el("div","prep");pb.appendChild(el("span",null,"⏱︎"));pb.appendChild(el("span",null,"Prepárate: "+soon[0].label+" en "+(soon[0].s-nowM)+" min"));sc.appendChild(pb);}
       // Próxima acción (estudio 4.4): una sola cosa, la siguiente. Un toque = Foco.
       var nx=nextActionToday();
       if(nx){var na=el("button","nextaction");na.setAttribute("aria-label","Lo siguiente: "+nx.title);na.appendChild(el("span","na-k","▶ Lo siguiente"));na.appendChild(el("span","na-t",nx.title));na.onclick=function(){openFocus(nx.id);};sc.appendChild(na);}
@@ -1205,7 +1212,7 @@
     var row=el("div","cap-row");
     var inp=el("input");inp.type="text";inp.id="dumpInput";inp.placeholder="¿Qué tienes en la cabeza? Escríbelo y ya.";inp.setAttribute("aria-label","Captura rápida");inp.autocomplete="off";
     row.appendChild(inp);
-    if(hasSpeech()){var mic=el("button","mic","🎤");mic.type="button";mic.setAttribute("aria-label","Dictar por voz");attachSpeech(mic,inp);row.appendChild(mic);}
+    if(canDictate()){var mic=el("button","mic","Dictar");mic.type="button";mic.setAttribute("aria-label","Dictar por voz");attachSpeech(mic,inp);row.appendChild(mic);}
     var btn=el("button","btn-action","Guardar");btn.type="submit";
     form.appendChild(row);form.appendChild(btn);
     form.onsubmit=function(e){e.preventDefault();var v=inp.value.trim();if(!v)return;inp.value="";capture(v);setTimeout(function(){var d=$("#dumpInput");if(d)d.focus();},0);};
@@ -1250,7 +1257,7 @@
     var task=tasks.filter(function(t){return t.id===tId;})[0];if(!task)return;
     focus.taskId=tId;focus.elapsed=0;focus.running=false;focus.prep=true;focus.fired={};focus.muted=false;focus.sessions++;
     focus.startSteps=task.steps.filter(function(s){return !s.done;}).map(function(s){return s.id;}); // para calibración
-    $("#ofSessions").textContent=focus.sessions>=3?("⚠ "+focus.sessions+"ª sesión seguida — considera parar por hoy"):(focus.sessions>1?(focus.sessions+"ª sesión seguida"):"");
+    $("#ofSessions").textContent=focus.sessions>=3?("Aviso: "+focus.sessions+"ª sesión seguida — considera parar por hoy"):(focus.sessions>1?(focus.sessions+"ª sesión seguida"):"");
     $("#ofTitle").textContent=task.title;
     $("#nudge").style.display="none";$("#breakScreen").className="breakscreen";
     $("#ofClock").className="clock";$("#ofMute").textContent="Silenciar";
