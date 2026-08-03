@@ -650,7 +650,7 @@
   function todayISO(){return iso(new Date());}
   function parse(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2]);}
   function addDays(s,n){var d=parse(s);d.setDate(d.getDate()+n);return iso(d);}
-  function addMonths(s,n){var d=parse(s);d.setMonth(d.getMonth()+n);return iso(d);}
+  function addMonths(s,n){var d=parse(s),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);var last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return iso(d);}
   function wdMon(s){return (parse(s).getDay()+6)%7;}
   function dm(s){var d=parse(s);return d.getDate()+" "+MON[d.getMonth()];}
   function monthLabel(s){var d=parse(s);return MONF[d.getMonth()]+" "+d.getFullYear();}
@@ -943,21 +943,24 @@
   }
   // ---------- Selectores de fecha/hora propios (C40), sin los pop-ups nativos ----------
   function fmtDate(s){if(!s)return "";var d=parse(s);return DAYSFULL[wdMon(s)].slice(0,3)+" "+d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear();}
+  // Fija el valor visible del campo y refleja el valor en el nombre accesible.
+  function setPickVal(b,label,text,ph){var v=b.querySelector(".pv");v.textContent=text||ph;v.className=text?"pv":"pv ph";b.setAttribute("aria-label",label+": "+(text||ph));}
   function pickBox(parent,label,text,ph,onOpen){
     var w=el("div","fld");w.appendChild(el("label","fld-l",label));
-    var b=el("button","pick");b.type="button";b.setAttribute("aria-label",label);
-    var v=el("span",text?"pv":"pv ph",text||ph);
-    b.appendChild(v);b.appendChild(el("span","hint","▾"));
-    b.onclick=onOpen;w.appendChild(b);parent.appendChild(w);return v;
+    var b=el("button","pick");b.type="button";
+    b.appendChild(el("span","pv"));
+    var hint=el("span","hint","▾");hint.setAttribute("aria-hidden","true");b.appendChild(hint);
+    setPickVal(b,label,text,ph);
+    b.onclick=onOpen;w.appendChild(b);parent.appendChild(w);return b;
   }
   function dateField(parent,label,getVal,setVal,allowClear){
-    var v=pickBox(parent,label,fmtDate(getVal()),"Elegir fecha",function(){
-      openDatePicker(getVal(),allowClear,label,function(val){setVal(val);v.textContent=val?fmtDate(val):"Elegir fecha";v.className=val?"pv":"pv ph";});
+    var b=pickBox(parent,label,fmtDate(getVal()),"Elegir fecha",function(){
+      openDatePicker(getVal(),allowClear,label,function(val){setVal(val);setPickVal(b,label,val?fmtDate(val):"","Elegir fecha");},b);
     });
   }
   function timeField(parent,label,getVal,setVal,allowClear){
-    var v=pickBox(parent,label,getVal()||"","— sin hora",function(){
-      openTimePicker(getVal(),allowClear,label,function(val){setVal(val);v.textContent=val||"— sin hora";v.className=val?"pv":"pv ph";});
+    var b=pickBox(parent,label,getVal()||"","— sin hora",function(){
+      openTimePicker(getVal(),allowClear,label,function(val){setVal(val);setPickVal(b,label,val||"","— sin hora");},b);
     });
   }
   // Calendario propio (reutiliza el look del mes).
@@ -974,31 +977,36 @@
     var wd=el("div","cal-wd");["L","M","X","J","V","S","D"].forEach(function(x){wd.appendChild(el("span",null,x));});body.appendChild(wd);
     var d=parse(dpView),first=new Date(d.getFullYear(),d.getMonth(),1);
     var start=(first.getDay()+6)%7,gStart=new Date(first);gStart.setDate(1-start);
-    var grid=el("div","cal-grid dp-grid");
+    var grid=el("div","cal-grid dp-grid"),today=todayISO();
     for(var i=0;i<42;i++){
       var cd=new Date(gStart);cd.setDate(gStart.getDate()+i);var cs=iso(cd);
       var out=cd.getMonth()!==d.getMonth();
-      var cell=el("button","cal-cell dp-cell"+(out?" out":"")+(cs===todayISO()?" today":"")+(cs===dpSel?" sel":""));
+      var cell=el("button","cal-cell dp-cell"+(out?" out":"")+(cs===today?" today":"")+(cs===dpSel?" sel":""));
       cell.type="button";cell.appendChild(el("span","cal-num",""+cd.getDate()));
       cell.setAttribute("aria-label",DAYSFULL[wdMon(cs)]+" "+dm(cs));
-      (function(cs){cell.onclick=function(){dpSel=cs;renderDPick();};})(cs);
+      if(cs===dpSel)cell.setAttribute("aria-current","date");
+      (function(cs){cell.onclick=function(){dpSel=cs;if(parse(cs).getMonth()!==parse(dpView).getMonth())dpView=cs;renderDPick();};})(cs);
       grid.appendChild(cell);
     }
     body.appendChild(grid);
   }
-  function openDatePicker(cur,allowClear,label,onSet){
+  function openDatePicker(cur,allowClear,label,onSet,trigEl){
+    var trig=trigEl||document.activeElement;
     dpSel=cur||"";dpView=cur||todayISO();
     $("#dpickK").textContent=label||"Fecha";
     renderDPick();
     var foot=$("#dpickFoot");foot.innerHTML="";
-    var set=el("button","save","Establecer");set.type="button";set.onclick=function(){onSet(dpSel);closeSheet("#dpick");};foot.appendChild(set);
-    if(allowClear){var clr=el("button","del","Borrar");clr.type="button";clr.onclick=function(){onSet("");closeSheet("#dpick");};foot.appendChild(clr);}
-    var cx=el("button","cancel","Cancelar");cx.type="button";cx.onclick=function(){closeSheet("#dpick");};foot.appendChild(cx);
-    openSheet("#dpick");
+    function close(){closeSheet("#dpick");if(trig&&trig.focus)trig.focus();}
+    var set=el("button","save","Establecer");set.type="button";set.onclick=function(){onSet(dpSel);close();};foot.appendChild(set);
+    if(allowClear){var clr=el("button","del","Borrar");clr.type="button";clr.onclick=function(){onSet("");close();};foot.appendChild(clr);}
+    var cx=el("button","cancel","Cancelar");cx.type="button";cx.onclick=function(){close();};foot.appendChild(cx);
+    openSheet("#dpick");setTimeout(function(){set.focus({preventScroll:true});},30);
   }
   // Selector de hora propio (tiras de horas y minutos).
-  function openTimePicker(cur,allowClear,label,onSet){
-    var mn=hmToMin(cur);if(mn==null)mn=9*60;
+  function openTimePicker(cur,allowClear,label,onSet,trigEl){
+    var trig=trigEl||document.activeElement;
+    var cur0=hmToMin(cur),touched=false;               // recordar si venía vacío y si el usuario tocó
+    var mn=cur0==null?9*60:cur0;
     var tpH=Math.floor(mn/60),tpM=mn%60;
     $("#tpickK").textContent=label||"Hora";
     var body=$("#tpickBody");body.innerHTML="";
@@ -1006,20 +1014,21 @@
     body.appendChild(el("label","fld-l","Hora"));
     var hrow=el("div","seg scroll");var mrow;
     function upd(){disp.textContent=pad(tpH)+":"+pad(tpM);
-      Array.prototype.forEach.call(hrow.children,function(c,i){c.className="seg-b"+(i===tpH?" on":"");});
-      Array.prototype.forEach.call(mrow.children,function(c,i){c.className="seg-b"+(i===tpM?" on":"");});}
-    for(var h=0;h<24;h++){(function(h){var b=el("button","seg-b"+(h===tpH?" on":""),pad(h));b.type="button";b.onclick=function(){tpH=h;upd();};hrow.appendChild(b);})(h);}
+      Array.prototype.forEach.call(hrow.children,function(c,i){c.className="seg-b"+(i===tpH?" on":"");c.setAttribute("aria-pressed",i===tpH?"true":"false");});
+      Array.prototype.forEach.call(mrow.children,function(c,i){c.className="seg-b"+(i===tpM?" on":"");c.setAttribute("aria-pressed",i===tpM?"true":"false");});}
+    for(var h=0;h<24;h++){(function(h){var b=el("button","seg-b"+(h===tpH?" on":""),pad(h));b.type="button";b.setAttribute("aria-pressed",h===tpH?"true":"false");b.setAttribute("aria-label",pad(h)+" h");b.onclick=function(){tpH=h;touched=true;upd();};hrow.appendChild(b);})(h);}
     body.appendChild(hrow);
     var ml=el("label","fld-l","Minutos");ml.style.marginTop="12px";body.appendChild(ml);
     mrow=el("div","seg scroll");
-    for(var m=0;m<60;m++){(function(m){var b=el("button","seg-b"+(m===tpM?" on":""),pad(m));b.type="button";b.onclick=function(){tpM=m;upd();};mrow.appendChild(b);})(m);}
+    for(var m=0;m<60;m++){(function(m){var b=el("button","seg-b"+(m===tpM?" on":""),pad(m));b.type="button";b.setAttribute("aria-pressed",m===tpM?"true":"false");b.setAttribute("aria-label","minuto "+pad(m));b.onclick=function(){tpM=m;touched=true;upd();};mrow.appendChild(b);})(m);}
     body.appendChild(mrow);
     var foot=$("#tpickFoot");foot.innerHTML="";
-    var set=el("button","save","Establecer");set.type="button";set.onclick=function(){onSet(pad(tpH)+":"+pad(tpM));closeSheet("#tpick");};foot.appendChild(set);
-    if(allowClear){var clr=el("button","del","Borrar");clr.type="button";clr.onclick=function(){onSet("");closeSheet("#tpick");};foot.appendChild(clr);}
-    var cx=el("button","cancel","Cancelar");cx.type="button";cx.onclick=function(){closeSheet("#tpick");};foot.appendChild(cx);
+    function close(){closeSheet("#tpick");if(trig&&trig.focus)trig.focus();}
+    var set=el("button","save","Establecer");set.type="button";set.onclick=function(){onSet((cur0==null&&!touched)?"":pad(tpH)+":"+pad(tpM));close();};foot.appendChild(set);
+    if(allowClear){var clr=el("button","del","Borrar");clr.type="button";clr.onclick=function(){onSet("");close();};foot.appendChild(clr);}
+    var cx=el("button","cancel","Cancelar");cx.type="button";cx.onclick=function(){close();};foot.appendChild(cx);
     openSheet("#tpick");
-    setTimeout(function(){var oh=hrow.querySelector(".on"),om=mrow.querySelector(".on");if(oh)oh.scrollIntoView({inline:"center",block:"nearest"});if(om)om.scrollIntoView({inline:"center",block:"nearest"});},20);
+    setTimeout(function(){var oh=hrow.querySelector(".on"),om=mrow.querySelector(".on");if(oh)oh.scrollIntoView({inline:"center",block:"nearest"});if(om)om.scrollIntoView({inline:"center",block:"nearest"});set.focus({preventScroll:true});},20);
   }
   function openEditor(type,obj,pre){
     var isNew=!obj;
@@ -1158,13 +1167,13 @@
 
     var d=parse(selDate),first=new Date(d.getFullYear(),d.getMonth(),1);
     var start=(first.getDay()+6)%7,gStart=new Date(first);gStart.setDate(1-start);
-    var grid=el("div","cal-grid");
+    var grid=el("div","cal-grid"),today=todayISO();
     for(var i=0;i<42;i++){
       var cd=new Date(gStart);cd.setDate(gStart.getDate()+i);var cs=iso(cd);
       var out=cd.getMonth()!==d.getMonth();
-      var cell=el("button","cal-cell"+(out?" out":"")+(cs===todayISO()?" today":"")+(cs===selDate?" sel":""));
+      var cell=el("button","cal-cell"+(out?" out":"")+(cs===today?" today":"")+(cs===selDate?" sel":""));
       var items=itemsForDay(cs);
-      cell.setAttribute("aria-label",DAYSFULL[wdMon(cs)]+" "+dm(cs)+(cs===todayISO()?", hoy":"")+(items.length?", "+items.length+" cosa"+(items.length>1?"s":""):", sin planes"));
+      cell.setAttribute("aria-label",DAYSFULL[wdMon(cs)]+" "+dm(cs)+(cs===today?", hoy":"")+(items.length?", "+items.length+" cosa"+(items.length>1?"s":""):", sin planes"));
       cell.appendChild(el("span","cal-num",""+cd.getDate()));
       if(items.length){
         // Pips de colores: un cuadrito por cosa (energía de la tarea / cita).
