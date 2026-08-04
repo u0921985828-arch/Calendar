@@ -20,12 +20,27 @@ android {
     // Clave debug FIJA y versionada: así todas las compilaciones (locales y de CI)
     // comparten firma y Android permite actualizar el APK encima sin desinstalar.
     // Una clave debug no es secreta; contraseñas estándar de Android.
+    // Clave debug FIJA y versionada: así todas las compilaciones (locales y de CI)
+    // comparten firma y Android permite actualizar el APK encima sin desinstalar.
+    // Una clave debug no es secreta; contraseñas estándar de Android.
     signingConfigs {
         getByName("debug") {
             storeFile = file("debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
+        // Clave de RELEASE fija y versionada (auto-firmada). No es de Play Store,
+        // pero sí un release real y estable: se instala/actualiza por sideload sin
+        // desinstalar. Una clave de firma de app no es un secreto de servidor.
+        create("release") {
+            storeFile = file("release.keystore")
+            storePassword = "neuroflow"
+            keyAlias = "neuroflow"
+            keyPassword = "neuroflow"
             enableV1Signing = true
             enableV2Signing = true
             enableV3Signing = true
@@ -37,7 +52,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         getByName("release") {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 

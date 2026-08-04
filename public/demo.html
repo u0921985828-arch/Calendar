@@ -548,6 +548,9 @@
 (function () {
   "use strict";
   try{console.log("NEUROFLOW_BOOTED");}catch(e){} // marca de arranque (verificación e2e del APK)
+  // Marca de contexto seguro + WebCrypto (verifica en CI que el cifrado SÍ funciona
+  // en el dispositivo: sirviendo por https://appassets.androidx.org, isSecureContext=1).
+  try{console.log("NEUROFLOW_SECURE="+(self.isSecureContext?1:0)+" CRYPTO="+((self.crypto&&self.crypto.subtle)?1:0));}catch(e){}
   var LS = window.localStorage;
 
   // ---------- Cifrado en reposo (clave maestra envuelta) ----------
@@ -626,7 +629,10 @@
   // Si el permiso/servicio falla en tiempo real, se marca roto y se retira el botón.
   var speechRec=null,speechBroken=false;
   function hasSpeech(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
-  function canDictate(){return hasSpeech()&&!speechBroken&&location.protocol!=="file:";}
+  // WebView del sistema de Android (UA contiene "; wv)"): el reconocimiento de voz
+  // no existe ahí, así que el dictado solo se ofrece en navegadores reales.
+  function isWebView(){var ua=navigator.userAgent||"";return /;\s?wv\)/.test(ua)||/\bwv\b/.test(ua)&&/Android/.test(ua);}
+  function canDictate(){return hasSpeech()&&!speechBroken&&!isWebView()&&location.protocol!=="file:";}
   function setMicLabel(btn,txt){btn.textContent=txt;}
   function attachSpeech(btn,target){
     var idle=btn.textContent||"Dictar";

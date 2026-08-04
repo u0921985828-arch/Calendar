@@ -33,11 +33,11 @@ jobs:
         with:
           gradle-version: "8.7"
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: android
         env:
           NF_VERSION_CODE: ${{ github.run_number }}
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon assembleRelease
 
       - name: Habilitar KVM
         run: |
@@ -56,7 +56,7 @@ jobs:
           # OJO: android-emulator-runner ejecuta CADA línea con `sh -c` por separado,
           # así que toda comprobación debe caber en UNA sola línea (nada de if/fi multilínea).
           script: |
-            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
             adb logcat -c
             adb shell am start -n com.neuroflow.app/.MainActivity
             sleep 12
@@ -66,8 +66,9 @@ jobs:
             echo "===== fin diagnóstico ====="
             adb logcat -d | grep -A 20 'FATAL EXCEPTION' && { echo "::error::La app crasheó (FATAL EXCEPTION)."; exit 1; } || echo "Sin FATAL EXCEPTION."
             adb shell dumpsys activity activities | grep -q 'com.neuroflow.app/.MainActivity' && echo "OK: la MainActivity está activa." || { echo "::error::La MainActivity no quedó en primer plano."; exit 1; }
-            adb logcat -d | grep -q 'NEUROFLOW_LOAD_ERROR' && echo "AVISO: hubo un onReceivedError de main frame (ver diagnóstico)." || echo "Sin onReceivedError de main frame."
+            adb logcat -d | grep -q 'NEUROFLOW_LOAD_ERROR' && { echo "::error::onReceivedError de main frame: la app NO cargó (ver diagnóstico)."; exit 1; } || echo "Sin onReceivedError de main frame."
             adb logcat -d | grep -q 'NEUROFLOW_BOOTED' && echo "OK: la web app arrancó de verdad (NEUROFLOW_BOOTED)." || { echo "::error::La web app no ejecutó su JS dentro del WebView (no cargó)."; exit 1; }
+            adb logcat -d | grep -q 'NEUROFLOW_SECURE=1 CRYPTO=1' && echo "OK: contexto seguro + WebCrypto disponibles en el dispositivo (el cifrado funciona)." || { echo "::error::No hay contexto seguro/WebCrypto en el dispositivo: el cifrado NO funcionaría."; adb logcat -d | grep -E 'NEUROFLOW_SECURE|isSecureContext' | head; exit 1; }
 
       - name: Subir captura
         if: always()

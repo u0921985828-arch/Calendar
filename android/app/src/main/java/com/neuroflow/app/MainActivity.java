@@ -7,18 +7,25 @@ import android.view.KeyEvent;
 import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 import androidx.annotation.NonNull;
 import androidx.webkit.WebResourceErrorCompat;
+import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
 import androidx.webkit.WebViewFeature;
 
 /**
  * Aloja la web app (public/demo.html, copiada a assets/index.html) en un WebView.
- * Se sirve vía WebViewAssetLoader bajo https://appassets.androidx.org/ para que
- * sea un contexto seguro: WebCrypto (el cifrado) y localStorage funcionan.
+ *
+ * Se sirve vía WebViewAssetLoader bajo https://appassets.androidx.org/ para que sea
+ * un CONTEXTO SEGURO (isSecureContext=true). Eso garantiza WebCrypto (crypto.subtle)
+ * y localStorage persistente, de los que depende el cifrado de la bóveda. Cargar
+ * desde file:// NO es contexto seguro y WebCrypto puede no existir; por eso no se usa.
+ * La app sigue siendo 100% offline: el loader intercepta y responde desde los assets
+ * locales (el permiso INTERNET solo lo exige el esquema https del loader).
  */
 public class MainActivity extends Activity {
 
@@ -28,17 +35,26 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+                .setDomain("appassets.androidx.org")
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .build();
+
         web = new WebView(this);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false);
-        s.setAllowFileAccess(true);
-        s.setAllowContentAccess(true);
+        s.setAllowFileAccess(false);
+        s.setAllowContentAccess(false);
 
-        // Registra en logcat los errores de carga del frame principal y reenvía los
-        // console.* (permite verificar en CI que la web app arranca de verdad).
         web.setWebViewClient(new WebViewClientCompat() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(@NonNull WebView view,
+                                                              @NonNull WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
             @Override
             public void onReceivedError(@NonNull WebView view, @NonNull WebResourceRequest request,
                                         @NonNull WebResourceErrorCompat error) {
@@ -62,11 +78,7 @@ public class MainActivity extends Activity {
         });
 
         setContentView(web);
-        // Carga la web app DIRECTAMENTE desde los assets del APK. Es la vía más
-        // robusta: funciona en cualquier WebView, sin interceptores que fallen.
-        // Nota: file:// no es contexto seguro; si WebCrypto no está disponible la
-        // app arranca sin cifrado (tiene ese modo de reserva integrado).
-        web.loadUrl("file:///android_asset/index.html");
+        web.loadUrl("https://appassets.androidx.org/assets/index.html");
     }
 
     @Override
