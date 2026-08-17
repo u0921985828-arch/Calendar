@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget C40: SOLO contadores (nunca títulos de tareas). Tinta + acentos de energía. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="12dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NEUROFLOW"
+        android:textColor="#8AECEC"
+        android:textSize="10sp"
+        android:letterSpacing="0.12"
+        android:fontFamily="monospace" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="true"
+        android:layout_marginTop="2dp">
+
+        <TextView
+            android:id="@+id/hoyNum"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="34sp"
+            android:fontFamily="sans-serif-black" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="6dp"
+            android:text="tareas hoy"
+            android:textColor="#B9B9B9"
+            android:textSize="12sp"
+            android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:weightSum="4">
+
+        <LinearLayout android:id="@+id/cellAlta" style="@style/NfCell">
+            <TextView android:id="@+id/nAlta" style="@style/NfCellNum" android:text="0" />
+            <TextView style="@style/NfCellLbl" android:text="ALTA" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/cellMedia" style="@style/NfCell">
+            <TextView android:id="@+id/nMedia" style="@style/NfCellNum" android:text="0" />
+            <TextView style="@style/NfCellLbl" android:text="MEDIA" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/cellBaja" style="@style/NfCell">
+            <TextView android:id="@+id/nBaja" style="@style/NfCellNum" android:text="0" />
+            <TextView style="@style/NfCellLbl" android:text="BAJA" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/cellEv" style="@style/NfCell">
+            <TextView android:id="@+id/nEv" style="@style/NfCellNum" android:text="0" />
+            <TextView style="@style/NfCellLbl" android:text="CITAS" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/prox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="9dp"
+        android:text="PRÓXIMOS"
+        android:textColor="#9A9A9A"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="monospace" />
+</LinearLayout>

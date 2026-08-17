@@ -612,7 +612,7 @@
 
   function snap(){return {tasks:tasks,captures:captures,events:events,cal:cal,trash:trash,archive:archive,over:nfOverrides};}
   function apply(st){tasks=st.tasks||[];captures=st.captures||[];events=st.events||[];cal=st.cal||[];trash=st.trash||[];archive=st.archive||[];nfOverrides=st.over||{};}
-  function save(){ if(masterKey) encStore(snap()); }
+  function save(){ if(masterKey){ encStore(snap()); pushWidget(); } }
   function locked(){return !masterKey && !noLock;}
 
   // ---------- Fechas ----------
@@ -1160,6 +1160,23 @@
   }
   // Carga del día (min estimados) → ancho de la barra de carga en el mes.
   function dayLoad(items){var m=0;items.forEach(function(it){if(!it.done)m+=(it.mins||0);});return m;}
+  // ---------- Widget de inicio (Android): SOLO contadores, nunca títulos ----------
+  // Proyección no sensible: por cada día (hoy + 6) el nº de tareas pendientes por
+  // energía y de citas. Sin textos de tareas. Se escribe vía puente nativo cuando la
+  // app está desbloqueada; el widget nativo la lee para pintarse con la app cerrada.
+  function widgetProjection(){
+    var days=[];
+    for(var i=0;i<7;i++){
+      var ds=addDays(todayISO(),i),it=itemsForDay(ds),c={d:ds,total:0,alta:0,media:0,baja:0,ev:0};
+      it.forEach(function(x){
+        if(x.kind==="ev"){c.ev++;c.total++;}
+        else if(!x.done){c[x.energy||"media"]=(c[x.energy||"media"]||0)+1;c.total++;}
+      });
+      days.push(c);
+    }
+    return {stamp:todayISO(),days:days};
+  }
+  function pushWidget(){try{if(window.NFWidget&&NFWidget.set)NFWidget.set(JSON.stringify(widgetProjection()));}catch(e){}}
   function renderMes(sc){
     var head=el("div","navhead");
     var dt=el("div","dt");dt.appendChild(el("div","big",monthLabel(selDate)));dt.appendChild(el("div","sub","toca un día para abrirlo"));head.appendChild(dt);
@@ -1440,7 +1457,7 @@
     closeSheet("#vault");closeSheet("#recShow");
     applyTheme();purgeTrash();
     var hash=(location.hash||"").replace("#","");if(RENDER[hash])activeTab=hash;
-    renderActive();armAutolock();
+    renderActive();armAutolock();pushWidget();
     if(activeTab==="captura"){var di=$("#dumpInput");if(di)setTimeout(function(){di.focus();},60);}
     if(!LS.getItem("nf_onb")&&!/noonb/.test(location.search)){renderOnb();openSheet("#onb");}
   }

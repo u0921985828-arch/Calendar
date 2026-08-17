@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tarjeta C40: fondo tinta plano con un filo neón arriba (autoridad climática). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#111111" />
+            <stroke android:width="1dp" android:color="#2A2A2A" />
+        </shape>
+    </item>
+    <item android:gravity="top" android:height="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#B8FF3C" />
+        </shape>
+    </item>
+</layer-list>

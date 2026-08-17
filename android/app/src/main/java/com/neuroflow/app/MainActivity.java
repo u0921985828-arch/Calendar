@@ -77,8 +77,19 @@ public class MainActivity extends Activity {
             }
         });
 
+        // Puente para el widget de inicio: la web app (desbloqueada) le pasa SOLO
+        // contadores; ningún dato de tareas se expone al widget.
+        web.addJavascriptInterface(new WidgetBridge(getApplicationContext()), "NFWidget");
+
         setContentView(web);
-        web.loadUrl("https://appassets.androidx.org/assets/index.html");
+
+        // Si se abre desde el widget, ir directo a la vista de "día" (hoy).
+        String url = "https://appassets.androidx.org/assets/index.html";
+        String go = getIntent() != null ? getIntent().getStringExtra("nf_go") : null;
+        if (go != null && !go.isEmpty()) {
+            url = url + "#" + go;
+        }
+        web.loadUrl(url);
     }
 
     @Override
